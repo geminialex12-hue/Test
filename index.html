@@ -217,7 +217,6 @@
       </div>
       <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
         <button id="searchPlaceBtn" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:30px; padding:6px 16px; color:#b0c4ff; cursor:pointer; font-size:13px;">📍 Найти место</button>
-        <!-- КНОПКА ГЕНЕРАЦИИ УДАЛЕНА -->
       </div>
     </div>
   </div>
@@ -238,7 +237,7 @@
   </div>
 </div>
 
-<!-- Settings modal -->
+<!-- Settings modal (с полем для API-ключа) -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal">
     <h2>⚙️ Настройки</h2>
@@ -259,6 +258,11 @@
     </div>
     <label>Модель</label>
     <select id="modelSelect"></select>
+
+    <!-- НОВОЕ ПОЛЕ ДЛЯ API-КЛЮЧА OPENROUTER -->
+    <label for="openrouterApiKey">API-ключ OpenRouter (оставьте пустым для встроенного)</label>
+    <input id="openrouterApiKey" type="password" placeholder="sk-or-v1-..." />
+
     <label>Голос</label>
     <select id="voiceSelect"></select>
     <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">
@@ -400,6 +404,7 @@
     const pluginNews = document.getElementById('pluginNews');
     const gitRepoUrl = document.getElementById('gitRepoUrl');
     const analyzeGitBtn = document.getElementById('analyzeGitBtn');
+    const openrouterApiKey = document.getElementById('openrouterApiKey'); // НОВОЕ ПОЛЕ
 
     // Plugin creator
     const pluginCreator = document.getElementById('pluginCreator');
@@ -431,8 +436,8 @@
 
     // ---------- Константы ----------
     const ENCRYPTED_KEY = 'c2stb3ItdjEtZTM0NTk1NWY1NGM2NTg1ZTA2OTBhMTkwNmE2ZmYyMzJmNjMxOWQyZGEwYjFmMjkzZjEyZWNmODMzMjFlZjYxMg==';
-    function getApiKey() { try { return atob(ENCRYPTED_KEY); } catch(e) { return ''; } }
-    const DEFAULT_API_KEY = getApiKey();
+    function getDefaultApiKey() { try { return atob(ENCRYPTED_KEY); } catch(e) { return ''; } }
+    const DEFAULT_API_KEY = getDefaultApiKey();
 
     // ---------- State ----------
     let isGenerating = false;
@@ -450,7 +455,7 @@
     let dbInitialized = false;
     let savedPlugins = [];
 
-    // ---------- Конфиг ----------
+    // ---------- Конфиг (добавили openrouterApiKey) ----------
     const config = {
       provider: 'openrouter',
       model: 'mistralai/mistral-7b-instruct:free',
@@ -477,6 +482,7 @@
       pluginCalendar: false,
       pluginNews: false,
       gitRepoUrl: '',
+      openrouterApiKey: '', // Сохраняем ключ отдельно
       emailjs_service: 'service_xxxxx',
       emailjs_template: 'template_xxxxx',
       emailjs_user: 'user_xxxxx'
@@ -517,6 +523,7 @@
       pluginCalendar.checked = false;
       pluginNews.checked = false;
       gitRepoUrl.value = '';
+      openrouterApiKey.value = '';
       updateModelOptions();
       modelSelect.value = 'mistralai/mistral-7b-instruct:free';
       config.model = 'mistralai/mistral-7b-instruct:free';
@@ -549,6 +556,7 @@
       pluginCalendar.checked = config.pluginCalendar || false;
       pluginNews.checked = config.pluginNews || false;
       gitRepoUrl.value = config.gitRepoUrl || '';
+      openrouterApiKey.value = config.openrouterApiKey || '';
       updateModelOptions();
       const models = modelOptions[config.provider] || [];
       if (models.some(m => m.value === config.model)) {
@@ -588,6 +596,7 @@
       config.pluginCalendar = pluginCalendar.checked;
       config.pluginNews = pluginNews.checked;
       config.gitRepoUrl = gitRepoUrl.value.trim();
+      config.openrouterApiKey = openrouterApiKey.value.trim(); // сохраняем ключ
       localStorage.setItem('jarvis_config', JSON.stringify(config));
       updateSystemPrompt();
       applyTheme(config.theme);
@@ -1478,10 +1487,10 @@
       }
     }
 
-    // ---------- Вызов AI ----------
+    // ---------- ВЫЗОВ AI (с поддержкой API-ключа) ----------
     async function callAI(messages) {
       const provider = config.provider;
-      let model = config.model;
+      const model = config.model;
       const temperature = config.temperature || 0.7;
 
       abortController = new AbortController();
@@ -1506,8 +1515,11 @@
       }
 
       if (provider === 'openrouter') {
-        const apiKey = DEFAULT_API_KEY;
-        if (!apiKey) throw new Error('API-ключ не настроен. Проверьте файл index.html или используйте Custom провайдер.');
+        // Используем ключ из поля, либо встроенный по умолчанию
+        let apiKey = config.openrouterApiKey || DEFAULT_API_KEY;
+        if (!apiKey) {
+          throw new Error('API-ключ OpenRouter не найден. Введите его в настройках или используйте встроенный.');
+        }
 
         const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -1524,6 +1536,10 @@
           let errMsg = await resp.text();
           if (resp.status === 404) {
             errMsg = 'Модель не найдена. Попробуйте выбрать другую в настройках (например, Mistral 7B).';
+          } else if (resp.status === 401) {
+            errMsg = 'Неверный API-ключ. Проверьте ключ в настройках.';
+          } else if (resp.status === 429) {
+            errMsg = 'Превышен лимит запросов. Попробуйте позже.';
           }
           throw new Error(`OpenRouter error (${resp.status}): ${errMsg}`);
         }
@@ -1532,6 +1548,7 @@
       }
 
       if (provider === 'google') {
+        // Для Google используем тот же ключ (если он есть в DEFAULT_API_KEY, но лучше отдельно)
         const apiKey = DEFAULT_API_KEY;
         if (!apiKey) throw new Error('API-ключ Google не настроен');
         const contents = messages.map(msg => ({
@@ -1607,8 +1624,8 @@
       }
 
       if (provider === 'openrouter') {
-        const apiKey = DEFAULT_API_KEY;
-        if (!apiKey) throw new Error('API-ключ не настроен');
+        let apiKey = config.openrouterApiKey || DEFAULT_API_KEY;
+        if (!apiKey) throw new Error('API-ключ OpenRouter не найден.');
         const payload = {
           model: config.model,
           messages: [
@@ -1632,7 +1649,9 @@
         if (!resp.ok) {
           let errMsg = await resp.text();
           if (resp.status === 404) {
-            errMsg = 'Модель не найдена. Попробуйте выбрать другую в настройках (например, Mistral 7B).';
+            errMsg = 'Модель не найдена. Попробуйте выбрать другую.';
+          } else if (resp.status === 401) {
+            errMsg = 'Неверный API-ключ. Проверьте настройки.';
           }
           throw new Error(`OpenRouter multimodal error (${resp.status}): ${errMsg}`);
         }
@@ -1844,6 +1863,7 @@
       pluginCalendar.checked = config.pluginCalendar || false;
       pluginNews.checked = config.pluginNews || false;
       gitRepoUrl.value = config.gitRepoUrl || '';
+      openrouterApiKey.value = config.openrouterApiKey || '';
       updateModelOptions();
       modelSelect.value = config.model || '';
       populateVoiceList();
@@ -1923,8 +1943,8 @@
         loadChats();
         loadSavedPlugins();
         addSystemMessage(`👋 Привет, ${userName}! Я Jarvis 3.4, созданный NODE / хелок. Чем могу помочь?`);
-        if (!DEFAULT_API_KEY && config.provider !== 'custom' && config.provider !== 'ollama') {
-          addSystemMessage('💡 Используйте Custom провайдер или проверьте ключ.');
+        if (!DEFAULT_API_KEY && config.provider !== 'custom' && config.provider !== 'ollama' && !config.openrouterApiKey) {
+          addSystemMessage('💡 Введите API-ключ OpenRouter в настройках или используйте встроенный.');
         }
         initIndexedDB().catch(console.warn);
       } else {
@@ -1952,8 +1972,8 @@
         loadChats();
         loadSavedPlugins();
         addSystemMessage(`👋 Привет, ${userName}! Я Jarvis 3.4, созданный NODE / хелок. Чем могу помочь?`);
-        if (!DEFAULT_API_KEY && config.provider !== 'custom' && config.provider !== 'ollama') {
-          addSystemMessage('💡 Используйте Custom провайдер или проверьте ключ.');
+        if (!DEFAULT_API_KEY && config.provider !== 'custom' && config.provider !== 'ollama' && !config.openrouterApiKey) {
+          addSystemMessage('💡 Введите API-ключ OpenRouter в настройках или используйте встроенный.');
         }
         initIndexedDB().catch(console.warn);
       } else {
@@ -1974,10 +1994,10 @@
     loadConfig();
     setTimeout(populateVoiceList, 600);
     checkSession();
-    if (!DEFAULT_API_KEY && config.provider !== 'custom' && config.provider !== 'ollama') {
+    if (!DEFAULT_API_KEY && config.provider !== 'custom' && config.provider !== 'ollama' && !config.openrouterApiKey) {
       setTimeout(() => {
         if (!authOverlay.classList.contains('hidden')) return;
-        addSystemMessage('⚠️ Встроенный API-ключ отсутствует. Выберите Custom провайдер.');
+        addSystemMessage('⚠️ Встроенный API-ключ отсутствует. Введите свой ключ в настройках.');
       }, 1000);
     }
 
