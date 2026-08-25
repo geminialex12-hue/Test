@@ -1,0 +1,2297 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jarvis 3.4 · ИИ-ассистент</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    /* ---------- RESET & GLOBAL ---------- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #080b12;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      color: #e4e9f2;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.light {
+      background: #f0f2f5;
+      color: #1a1a2e;
+    }
+    /* ---------- APP LAYOUT ---------- */
+    .app {
+      display: flex;
+      height: 100vh;
+      width: 100%;
+      background: rgba(8, 11, 18, 0.95);
+      transition: background 0.3s;
+    }
+    body.light .app {
+      background: rgba(240, 242, 245, 0.95);
+    }
+    /* ---------- SIDEBAR ---------- */
+    .sidebar {
+      width: 260px;
+      background: rgba(14, 18, 32, 0.92);
+      backdrop-filter: blur(16px);
+      border-right: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: transform 0.3s ease, background 0.3s;
+      overflow: hidden;
+      z-index: 10;
+    }
+    body.light .sidebar {
+      background: rgba(255, 255, 255, 0.92);
+      border-right-color: rgba(0,0,0,0.08);
+    }
+    .sidebar-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    body.light .sidebar-header {
+      border-bottom-color: rgba(0,0,0,0.06);
+    }
+    .sidebar-header .logo {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #7a97ff, #1f3a9f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sidebar-header .logo small {
+      font-size: 12px;
+      background: rgba(255,255,255,0.06);
+      padding: 2px 10px;
+      border-radius: 12px;
+      -webkit-text-fill-color: #8e9fd3;
+      font-weight: 400;
+    }
+    body.light .sidebar-header .logo small {
+      background: rgba(0,0,0,0.06);
+      -webkit-text-fill-color: #4a5a7a;
+    }
+    .new-chat-btn {
+      background: rgba(74, 106, 255, 0.15);
+      border: 1px solid rgba(74, 106, 255, 0.2);
+      color: #b0c4ff;
+      padding: 8px 14px;
+      border-radius: 40px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+    .new-chat-btn:hover {
+      background: rgba(74, 106, 255, 0.25);
+      border-color: #4a6aff;
+    }
+    body.light .new-chat-btn {
+      color: #2a3a6a;
+      background: rgba(74, 106, 255, 0.08);
+    }
+    body.light .new-chat-btn:hover {
+      background: rgba(74, 106, 255, 0.15);
+    }
+    .chat-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 12px;
+    }
+    .chat-list::-webkit-scrollbar { width: 4px; }
+    .chat-list::-webkit-scrollbar-thumb { background: #2a3150; border-radius: 8px; }
+    body.light .chat-list::-webkit-scrollbar-thumb { background: #c0c8d8; }
+    .chat-item {
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+    .chat-item:hover { background: rgba(255,255,255,0.04); }
+    body.light .chat-item:hover { background: rgba(0,0,0,0.04); }
+    .chat-item.active { background: rgba(74, 106, 255, 0.12); border-left: 2px solid #4a6aff; }
+    body.light .chat-item.active { background: rgba(74, 106, 255, 0.08); }
+    .chat-item .chat-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .chat-item .chat-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: 0.2s;
+    }
+    .chat-item:hover .chat-actions { opacity: 1; }
+    .chat-item .chat-actions button {
+      background: transparent;
+      border: none;
+      color: #6a7ba8;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 13px;
+      transition: 0.2s;
+    }
+    .chat-item .chat-actions button:hover { color: #ff6b6b; background: rgba(255,70,70,0.08); }
+    .sidebar-footer {
+      padding: 16px 18px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    body.light .sidebar-footer {
+      border-top-color: rgba(0,0,0,0.06);
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #7a97ff, #1f3a9f);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 16px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .user-details {
+      flex: 1;
+      min-width: 0;
+    }
+    .user-details .user-name {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .user-details .user-email {
+      font-size: 12px;
+      color: #6a7ba8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .logout-btn {
+      background: rgba(255,70,70,0.08);
+      border: none;
+      color: #ff6b6b;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .logout-btn:hover { background: rgba(255,70,70,0.15); }
+    /* ---------- MAIN CHAT AREA ---------- */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: rgba(8, 11, 18, 0.7);
+      backdrop-filter: blur(20px);
+      min-width: 0;
+      transition: background 0.3s;
+    }
+    body.light .main {
+      background: rgba(240, 242, 245, 0.7);
+    }
+    .main-header {
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      flex-shrink: 0;
+      background: rgba(0,0,0,0.15);
+    }
+    body.light .main-header {
+      border-bottom-color: rgba(0,0,0,0.06);
+      background: rgba(255,255,255,0.08);
+    }
+    .menu-toggle {
+      background: transparent;
+      border: none;
+      color: #b0c4ff;
+      font-size: 22px;
+      cursor: pointer;
+      display: none;
+      padding: 4px;
+    }
+    body.light .menu-toggle { color: #2a3a6a; }
+    .main-header .chat-title {
+      font-size: 18px;
+      font-weight: 600;
+      flex: 1;
+    }
+    .main-header .chat-title input {
+      background: transparent;
+      border: none;
+      color: #eef3ff;
+      font-size: 18px;
+      font-weight: 600;
+      outline: none;
+      width: 100%;
+      font-family: inherit;
+    }
+    body.light .main-header .chat-title input { color: #1a1a2e; }
+    .main-header .chat-title input::placeholder { color: #6a7ba8; }
+    .main-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .main-actions button {
+      background: rgba(255,255,255,0.04);
+      border: none;
+      color: #b0c4ff;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      font-size: 17px;
+      cursor: pointer;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .main-actions button:hover { background: rgba(255,255,255,0.08); }
+    body.light .main-actions button { color: #2a3a6a; background: rgba(0,0,0,0.04); }
+    body.light .main-actions button:hover { background: rgba(0,0,0,0.08); }
+
+    .chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+    .chat-box::-webkit-scrollbar { width: 4px; }
+    .chat-box::-webkit-scrollbar-track { background: transparent; }
+    .chat-box::-webkit-scrollbar-thumb { background: #3c4f8a; border-radius: 8px; }
+    body.light .chat-box::-webkit-scrollbar-thumb { background: #c0c8d8; }
+
+    .message { display: flex; flex-direction: column; max-width: 92%; animation: slideUp 0.3s ease forwards; opacity: 0; transform: translateY(12px); }
+    @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+    .message.user { align-self: flex-end; align-items: flex-end; }
+    .message.jarvis { align-self: flex-start; align-items: flex-start; }
+    .message.system { align-self: center; max-width: 80%; font-size: 13px; color: #8e9fd3; }
+    body.light .message.system { color: #5a6a8a; }
+    .message.system .bubble { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.03); border-radius: 40px; padding: 6px 16px; }
+    body.light .message.system .bubble { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.04); }
+    .bubble { padding: 10px 18px; border-radius: 22px; font-size: 15px; line-height: 1.6; word-break: break-word; background: rgba(40, 46, 74, 0.7); border: 1px solid rgba(255,255,255,0.04); box-shadow: 0 2px 12px rgba(0,0,0,0.2); position: relative; max-width: 100%; }
+    body.light .bubble { background: rgba(230, 234, 248, 0.8); border-color: rgba(0,0,0,0.04); box-shadow: 0 2px 8px rgba(0,0,0,0.06); color: #1a1a2e; }
+    .message.user .bubble { background: linear-gradient(135deg, #4a6aff, #2f47c7); border-color: rgba(255,255,255,0.08); color: white; border-bottom-right-radius: 6px; }
+    body.light .message.user .bubble { background: linear-gradient(135deg, #4a6aff, #2f47c7); color: white; }
+    .message.jarvis .bubble { background: rgba(30, 36, 60, 0.8); backdrop-filter: blur(4px); border-bottom-left-radius: 6px; border-left: 2px solid #4a6aff; }
+    body.light .message.jarvis .bubble { background: rgba(230, 234, 248, 0.8); border-left-color: #4a6aff; }
+    .bubble p { margin: 4px 0; }
+    .bubble ul, .bubble ol { padding-left: 20px; margin: 6px 0; }
+    .bubble blockquote { border-left: 3px solid #4a6aff; padding-left: 14px; margin: 8px 0; color: #b8c7ff; }
+    body.light .bubble blockquote { color: #3a4a6a; }
+    .bubble pre { position: relative; background: #0d1117; border-radius: 14px; padding: 16px 18px; margin: 8px 0; overflow-x: auto; font-size: 13px; border: 1px solid rgba(255,255,255,0.06); }
+    body.light .bubble pre { background: #f0f2f5; border-color: rgba(0,0,0,0.06); }
+    .bubble pre code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; display: block; white-space: pre; }
+    .bubble pre .line-numbers { float: left; margin-right: 12px; color: #6a7ba8; user-select: none; text-align: right; padding-right: 6px; border-right: 1px solid #2a3150; }
+    body.light .bubble pre .line-numbers { border-right-color: #c0c8d8; }
+    .code-toolbar { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s; }
+    .bubble pre:hover .code-toolbar { opacity: 1; }
+    .code-toolbar button { background: rgba(255,255,255,0.08); border: none; color: #b0c4ff; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: 0.2s; }
+    .code-toolbar button:hover { background: rgba(255,255,255,0.18); }
+    body.light .code-toolbar button { background: rgba(0,0,0,0.06); color: #2a3a6a; }
+    body.light .code-toolbar button:hover { background: rgba(0,0,0,0.12); }
+    .source-block { margin-top: 8px; padding: 8px 14px; background: rgba(255,255,255,0.04); border-radius: 12px; border-left: 2px solid #4a6aff; font-size: 13px; color: #96a7d9; }
+    body.light .source-block { background: rgba(0,0,0,0.04); color: #3a4a6a; }
+    .source-block a { color: #7a97ff; text-decoration: none; }
+    .source-block a:hover { text-decoration: underline; }
+    body.light .source-block a { color: #4a6aff; }
+
+    .thinking-dots { display: flex; gap: 6px; align-items: center; padding: 6px 0; }
+    .thinking-dots span { width: 8px; height: 8px; background: #8aa3ff; border-radius: 50%; animation: dotBounce 1.4s infinite; }
+    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dotBounce { 0%,60%,100% { transform: translateY(0); opacity:0.4; } 30% { transform: translateY(-10px); opacity:1; } }
+
+    .input-area { padding: 14px 24px 22px; display: flex; flex-direction: column; gap: 10px; background: rgba(8, 11, 20, 0.6); border-top: 1px solid rgba(255,255,255,0.04); flex-shrink: 0; }
+    body.light .input-area { background: rgba(240, 242, 245, 0.6); border-top-color: rgba(0,0,0,0.06); }
+    .input-row { display: flex; gap: 12px; align-items: center; }
+    .input-wrapper { flex: 1; display: flex; align-items: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 40px; padding: 0 8px 0 18px; transition: border 0.25s, box-shadow 0.25s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+    body.light .input-wrapper { background: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.08); }
+    .input-wrapper:focus-within { border-color: #4a6aff; box-shadow: 0 0 0 3px rgba(74, 106, 255, 0.15), inset 0 2px 4px rgba(0,0,0,0.2); }
+    .input-wrapper input { flex: 1; background: transparent; border: none; padding: 12px 0; color: #eef3ff; font-size: 15px; outline: none; font-family: inherit; }
+    body.light .input-wrapper input { color: #1a1a2e; }
+    .input-wrapper input::placeholder { color: #6a7ba8; font-weight: 300; }
+    .input-wrapper .tool-btn { background: transparent; border: none; color: #b0c4ff; width: 40px; height: 40px; border-radius: 50%; font-size: 19px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+    .input-wrapper .tool-btn:hover { background: rgba(255,255,255,0.05); color:#d6e2ff; }
+    body.light .input-wrapper .tool-btn { color: #4a5a7a; }
+    body.light .input-wrapper .tool-btn:hover { background: rgba(0,0,0,0.04); color:#2a3a6a; }
+    .input-wrapper .tool-btn:active { transform: scale(0.9); }
+    .input-wrapper .tool-btn.mic-active { color: #ff6b8a; background: rgba(255,80,120,0.15); }
+    .input-wrapper .tool-btn.has-attachment { color: #6bff6b; }
+    .send-btn { background: linear-gradient(135deg, #4a6aff, #2f47c7); border: none; color: white; width: 48px; height: 48px; border-radius: 50%; font-size: 22px; cursor: pointer; box-shadow: 0 6px 20px rgba(56,98,255,0.3); transition: 0.2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .send-btn:hover { box-shadow: 0 8px 30px rgba(56,98,255,0.5); background: linear-gradient(135deg, #5a7aff, #3a57d7); }
+    .send-btn:active { transform: scale(0.92); }
+    .stop-btn { background: rgba(255,70,70,0.12); border: none; color: #ff6b6b; width: 48px; height: 48px; border-radius: 50%; font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; transition: 0.2s; }
+    .stop-btn:hover { background: rgba(255,70,70,0.2); }
+    .file-input-hidden { display: none; }
+
+    /* ---------- MODAL ---------- */
+    .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 999; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: #1a2035; border-radius: 32px; padding: 32px 28px; max-width: 600px; width: 90%; box-shadow: 0 40px 80px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.06); max-height: 90vh; overflow-y: auto; transition: background 0.3s; }
+    body.light .modal { background: #f0f2f5; border-color: rgba(0,0,0,0.06); }
+    .modal h2 { font-size: 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+    .modal label { display: block; font-size: 13px; color: #96a7d9; margin-top: 16px; margin-bottom: 4px; }
+    body.light .modal label { color: #4a5a7a; }
+    .modal select, .modal input, .modal .range-wrap { width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #eef3ff; font-size: 14px; outline: none; font-family: inherit; }
+    body.light .modal select, body.light .modal input, body.light .modal .range-wrap { background: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.08); color: #1a1a2e; }
+    .modal select option { background: #1a2035; }
+    body.light .modal select option { background: #f0f2f5; }
+    .modal .range-wrap { display: flex; align-items: center; gap: 12px; padding: 6px 14px; }
+    .modal .range-wrap input[type="range"] { flex: 1; background: transparent; accent-color: #4a6aff; }
+    .modal .range-wrap span { min-width: 32px; text-align: center; color: #b0c4ff; }
+    body.light .modal .range-wrap span { color: #2a3a6a; }
+    .modal .checkbox-group { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+    .modal .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: #4a6aff; cursor: pointer; }
+    .modal .checkbox-group label { margin: 0; cursor: pointer; font-size: 14px; }
+    .modal .help-text { font-size: 12px; color: #7a8bb5; margin-top: 6px; }
+    body.light .modal .help-text { color: #4a5a7a; }
+    .modal .help-text a { color: #4a6aff; text-decoration: none; }
+    .modal .modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+    .modal .modal-actions button { padding: 10px 24px; border: none; border-radius: 30px; font-weight: 500; cursor: pointer; transition: 0.2s; }
+    .modal .modal-actions .btn-primary { background: #4a6aff; color: white; }
+    .modal .modal-actions .btn-primary:hover { background: #5a7aff; }
+    .modal .modal-actions .btn-secondary { background: rgba(255,255,255,0.06); color: #b0c4ff; }
+    body.light .modal .modal-actions .btn-secondary { background: rgba(0,0,0,0.06); color: #2a3a6a; }
+    .modal .modal-actions .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+    body.light .modal .modal-actions .btn-secondary:hover { background: rgba(0,0,0,0.1); }
+
+    /* ---------- AUTH OVERLAY ---------- */
+    .auth-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.75); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .auth-overlay.hidden { display: none; }
+    .auth-box { background: #1a2035; border-radius: 40px; padding: 40px 32px; max-width: 420px; width: 90%; box-shadow: 0 40px 80px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.06); text-align: center; }
+    body.light .auth-box { background: #f0f2f5; border-color: rgba(0,0,0,0.06); }
+    .auth-box h2 { font-size: 24px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .auth-box p { color: #96a7d9; font-size: 14px; margin-bottom: 24px; }
+    body.light .auth-box p { color: #4a5a7a; }
+    .auth-box input { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 30px; color: #eef3ff; font-size: 15px; outline: none; font-family: inherit; margin-bottom: 12px; transition: border 0.2s; }
+    body.light .auth-box input { background: rgba(255,255,255,0.6); color: #1a1a2e; border-color: rgba(0,0,0,0.08); }
+    .auth-box input:focus { border-color: #4a6aff; }
+    .auth-box .auth-row { display: flex; gap: 10px; margin-bottom: 12px; }
+    .auth-box .auth-row input { flex: 1; margin-bottom: 0; }
+    .auth-box .auth-row button { padding: 10px 18px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 30px; color: #b0c4ff; cursor: pointer; transition: 0.2s; font-size: 14px; white-space: nowrap; }
+    body.light .auth-box .auth-row button { background: rgba(0,0,0,0.04); color: #2a3a6a; border-color: rgba(0,0,0,0.08); }
+    .auth-box .auth-row button:hover { background: rgba(255,255,255,0.1); }
+    body.light .auth-box .auth-row button:hover { background: rgba(0,0,0,0.08); }
+    .auth-box .btn-confirm { width: 100%; padding: 12px; background: linear-gradient(135deg, #4a6aff, #2f47c7); border: none; border-radius: 30px; color: white; font-size: 16px; font-weight: 500; cursor: pointer; transition: 0.2s; margin-top: 8px; }
+    .auth-box .btn-confirm:hover { background: linear-gradient(135deg, #5a7aff, #3a57d7); }
+    .auth-box .error-msg { color: #ff6b6b; font-size: 13px; margin-top: 8px; min-height: 20px; }
+
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 280px;
+        height: 100%;
+        transform: translateX(-100%);
+        box-shadow: 4px 0 24px rgba(0,0,0,0.6);
+        z-index: 20;
+      }
+      .sidebar.open { transform: translateX(0); }
+      .menu-toggle { display: flex; }
+      .main-header .chat-title { font-size: 16px; }
+      .main-header { padding: 10px 16px; }
+      .chat-box { padding: 14px; }
+      .input-area { padding: 10px 16px 16px; }
+      .input-row { flex-wrap: wrap; }
+      .input-wrapper { flex: 1 1 100%; }
+    }
+    .sidebar-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.4); z-index: 15; }
+    .sidebar-overlay.active { display: block; }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">Jarvis <small>3.4</small></div>
+      <button class="new-chat-btn" id="newChatBtn">➕ Новый</button>
+    </div>
+    <div class="chat-list" id="chatList"></div>
+    <div class="sidebar-footer">
+      <div class="user-info" id="userInfo">
+        <div class="user-avatar" id="userAvatar">J</div>
+        <div class="user-details">
+          <div class="user-name" id="userNameDisplay">Пользователь</div>
+          <div class="user-email" id="userEmailDisplay">email@example.com</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">Выйти</button>
+      </div>
+    </div>
+  </div>
+  <!-- Mobile overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="main-header">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="chat-title">
+        <input id="chatTitleInput" placeholder="Новый чат" spellcheck="false" />
+      </div>
+      <div class="main-actions">
+        <button id="exportBtn" title="Скачать чат">📥</button>
+        <button id="clearBtn" title="Очистить диалог">🗑</button>
+        <button id="settingsBtn" title="Настройки">⚙️</button>
+      </div>
+    </div>
+    <div class="chat-box" id="chatBox"></div>
+    <div class="input-area">
+      <div class="input-row">
+        <div class="input-wrapper">
+          <input type="text" id="textInput" placeholder="Спроси что угодно…" autofocus />
+          <button class="tool-btn" id="micButton" title="Голосовой ввод">🎙️</button>
+          <button class="tool-btn" id="attachBtn" title="Прикрепить фото">📎</button>
+          <input type="file" id="fileInput" class="file-input-hidden" accept="image/*" />
+        </div>
+        <button class="stop-btn" id="stopButton">⏹</button>
+        <button class="send-btn" id="sendButton">➤</button>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+        <button id="searchPlaceBtn" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:30px; padding:6px 16px; color:#b0c4ff; cursor:pointer; font-size:13px;">📍 Найти место</button>
+        <button id="generateImageBtn" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:30px; padding:6px 16px; color:#b0c4ff; cursor:pointer; font-size:13px;">🎨 Сгенерировать изображение</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Auth overlay -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <h2>🔐 Вход в Jarvis 3.4</h2>
+    <p>Введите почту, получите код и войдите</p>
+    <div class="auth-row">
+      <input type="email" id="authEmail" placeholder="Email" />
+      <button id="sendCodeBtn">Отправить код</button>
+    </div>
+    <input type="text" id="authCode" placeholder="Введите код из письма" />
+    <button class="btn-confirm" id="confirmBtn">Подтвердить</button>
+    <div id="authMessage" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- Settings modal (расширенный) -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h2>⚙️ Настройки</h2>
+    <!-- Общие -->
+    <label for="providerSelect">Провайдер</label>
+    <select id="providerSelect">
+      <option value="openrouter">OpenRouter</option>
+      <option value="google">Google Gemini</option>
+      <option value="ollama">Ollama (локально)</option>
+      <option value="custom">Custom (свой сервер)</option>
+    </select>
+    <div id="customFields" style="display:none;">
+      <label for="customUrl">URL эндпоинта</label>
+      <input id="customUrl" type="text" placeholder="https://api.my-ai.com/v1/chat/completions" />
+      <label for="customApiKey">API-ключ</label>
+      <input id="customApiKey" type="password" placeholder="Ваш ключ" />
+      <label for="customModel">Название модели</label>
+      <input id="customModel" type="text" placeholder="gpt-4, llama3, etc." />
+    </div>
+    <label for="modelSelect">Модель</label>
+    <select id="modelSelect"></select>
+    <label for="voiceSelect">Голос для озвучивания</label>
+    <select id="voiceSelect"></select>
+
+    <!-- Тема -->
+    <label>Тема</label>
+    <select id="themeSelect">
+      <option value="dark">Тёмная</option>
+      <option value="light">Светлая</option>
+    </select>
+
+    <!-- Язык -->
+    <label>Язык интерфейса</label>
+    <select id="langSelect">
+      <option value="ru">Русский</option>
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
+
+    <!-- Режимы -->
+    <label>🧠 Режимы</label>
+    <div class="checkbox-group"><input type="checkbox" id="empathyMode" checked /><label for="empathyMode">Эмпатичный</label></div>
+    <div class="checkbox-group"><input type="checkbox" id="deepAnalysis" checked /><label for="deepAnalysis">Глубокий анализ</label></div>
+    <div class="checkbox-group"><input type="checkbox" id="creativeMode" /><label for="creativeMode">Креативный</label></div>
+    <div class="checkbox-group"><input type="checkbox" id="selfLearn" checked /><label for="selfLearn">Самообучение (сохранение в IndexedDB)</label></div>
+    <div class="checkbox-group"><input type="checkbox" id="sourceCheck" checked /><label for="sourceCheck">Источники</label></div>
+    <div class="checkbox-group"><input type="checkbox" id="showLineNumbers" checked /><label for="showLineNumbers">Номера строк</label></div>
+
+    <!-- Код-помощник -->
+    <div class="checkbox-group"><input type="checkbox" id="codeHelper" /><label for="codeHelper">Режим «Код-помощник» (анализ ошибок)</label></div>
+
+    <!-- Web-поиск -->
+    <div class="checkbox-group"><input type="checkbox" id="webSearch" /><label for="webSearch">Web-поиск (DuckDuckGo)</label></div>
+
+    <!-- Голосовые команды -->
+    <div class="checkbox-group"><input type="checkbox" id="voiceCommands" /><label for="voiceCommands">Голосовые команды (очистить, новый чат, тема)</label></div>
+
+    <!-- Плагины -->
+    <label>🔌 Плагины</label>
+    <div class="checkbox-group"><input type="checkbox" id="pluginWeather" /><label for="pluginWeather">Погода</label></div>
+    <div class="checkbox-group"><input type="checkbox" id="pluginCalendar" /><label for="pluginCalendar">Календарь</label></div>
+    <div class="checkbox-group"><input type="checkbox" id="pluginNews" /><label for="pluginNews">Новости</label></div>
+
+    <!-- Git -->
+    <label for="gitRepoUrl">URL репозитория Git</label>
+    <input id="gitRepoUrl" type="text" placeholder="https://github.com/user/repo" />
+    <button id="analyzeGitBtn" style="margin-top:8px; padding:6px 16px; background:#4a6aff; border:none; border-radius:30px; color:white; cursor:pointer;">Анализировать репозиторий</button>
+
+    <!-- Генерация изображений -->
+    <label for="imageApiKey">API-ключ для генерации изображений (Hugging Face)</label>
+    <input id="imageApiKey" type="password" placeholder="hf_xxxx..." />
+
+    <label>Температура</label>
+    <div class="range-wrap"><span>0.0</span><input type="range" id="temperatureRange" min="0" max="200" value="70" /><span id="tempValue">0.7</span></div>
+    <label>Область знаний</label>
+    <select id="knowledgeDomain">
+      <option value="general">Общая эрудиция</option>
+      <option value="programming">Программирование</option>
+      <option value="science">Наука</option>
+      <option value="creative">Творчество</option>
+    </select>
+    <label for="systemPromptInput">Дополнительный промпт</label>
+    <input id="systemPromptInput" type="text" placeholder="Ваши инструкции..." />
+    <div class="modal-actions">
+      <button class="btn-secondary" id="modalClose">Отмена</button>
+      <button class="btn-primary" id="modalSave">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    'use strict';
+
+    // ---------- DOM ----------
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const menuToggle = document.getElementById('menuToggle');
+    const chatList = document.getElementById('chatList');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const chatTitleInput = document.getElementById('chatTitleInput');
+    const chatBox = document.getElementById('chatBox');
+    const textInput = document.getElementById('textInput');
+    const sendBtn = document.getElementById('sendButton');
+    const micBtn = document.getElementById('micButton');
+    const stopBtn = document.getElementById('stopButton');
+    const clearBtn = document.getElementById('clearBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const modal = document.getElementById('settingsModal');
+    const modalClose = document.getElementById('modalClose');
+    const modalSave = document.getElementById('modalSave');
+    const providerSelect = document.getElementById('providerSelect');
+    const modelSelect = document.getElementById('modelSelect');
+    const systemPromptInput = document.getElementById('systemPromptInput');
+    const userNameDisplay = document.getElementById('userNameDisplay');
+    const userEmailDisplay = document.getElementById('userEmailDisplay');
+    const userAvatar = document.getElementById('userAvatar');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const customFields = document.getElementById('customFields');
+    const customUrl = document.getElementById('customUrl');
+    const customApiKey = document.getElementById('customApiKey');
+    const customModel = document.getElementById('customModel');
+    const empathyMode = document.getElementById('empathyMode');
+    const deepAnalysis = document.getElementById('deepAnalysis');
+    const creativeMode = document.getElementById('creativeMode');
+    const selfLearn = document.getElementById('selfLearn');
+    const sourceCheck = document.getElementById('sourceCheck');
+    const showLineNumbers = document.getElementById('showLineNumbers');
+    const temperatureRange = document.getElementById('temperatureRange');
+    const tempValue = document.getElementById('tempValue');
+    const knowledgeDomain = document.getElementById('knowledgeDomain');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const fileInput = document.getElementById('fileInput');
+    const attachBtn = document.getElementById('attachBtn');
+    const searchPlaceBtn = document.getElementById('searchPlaceBtn');
+    const generateImageBtn = document.getElementById('generateImageBtn');
+
+    // Новые элементы
+    const themeSelect = document.getElementById('themeSelect');
+    const langSelect = document.getElementById('langSelect');
+    const codeHelper = document.getElementById('codeHelper');
+    const webSearch = document.getElementById('webSearch');
+    const voiceCommands = document.getElementById('voiceCommands');
+    const pluginWeather = document.getElementById('pluginWeather');
+    const pluginCalendar = document.getElementById('pluginCalendar');
+    const pluginNews = document.getElementById('pluginNews');
+    const gitRepoUrl = document.getElementById('gitRepoUrl');
+    const analyzeGitBtn = document.getElementById('analyzeGitBtn');
+    const imageApiKey = document.getElementById('imageApiKey');
+
+    const authOverlay = document.getElementById('authOverlay');
+    const authEmail = document.getElementById('authEmail');
+    const authCode = document.getElementById('authCode');
+    const sendCodeBtn = document.getElementById('sendCodeBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const authMessage = document.getElementById('authMessage');
+
+    // ---------- Константы ----------
+    const ENCRYPTED_KEY = 'c2stb3ItdjEtZTM0NTk1NWY1NGM2NTg1ZTA2OTBhMTkwNmE2ZmYyMzJmNjMxOWQyZGEwYjFmMjkzZjEyZWNmODMzMjFlZjYxMg==';
+    function getApiKey() { try { return atob(ENCRYPTED_KEY); } catch(e) { return ''; } }
+    const DEFAULT_API_KEY = getApiKey();
+
+    // ---------- State ----------
+    let isGenerating = false;
+    let abortController = null;
+    let isVoiceInput = false;
+    let pendingImage = null;
+    let currentChatId = null;
+    let chats = [];
+    let userEmail = '';
+    let userName = '';
+    let currentLang = 'ru';
+
+    // Переводы
+    const translations = {
+      ru: {
+        newChat: 'Новый чат',
+        newChatBtn: '➕ Новый',
+        placeholder: 'Спроси что угодно…',
+        findPlace: '📍 Найти место',
+        generateImage: '🎨 Сгенерировать изображение',
+        settings: 'Настройки',
+        export: 'Скачать чат',
+        clear: 'Очистить диалог',
+        logout: 'Выйти',
+        welcome: '👋 Привет, {name}! Я Jarvis 3.4. Чем могу помочь?',
+        settingsSaved: '⚙️ Настройки сохранены.',
+        noMessages: '⚠️ Нет сообщений для экспорта.',
+        chatExported: '📥 Чат скачан.',
+        authTitle: '🔐 Вход в Jarvis 3.4',
+        authSub: 'Введите почту, получите код и войдите',
+        sendCode: 'Отправить код',
+        confirm: 'Подтвердить',
+        testCode: '🔑 Тестовый код: {code} (также в консоли)',
+        codeSent: '✅ Код отправлен на почту!',
+        codeError: '❌ Ошибка отправки. Проверьте настройки EmailJS.',
+        invalidEmail: '❌ Введите корректный email.',
+        enterCode: '❌ Введите код.',
+        wrongCode: '❌ Неверный код. Попробуйте ещё раз.',
+        attachPhoto: '📎 Изображение прикреплено ({name})',
+        searchPlaces: '🔍 Поиск: "{query}"...',
+        nothingFound: '📍 Ничего не найдено.',
+        searchError: '❌ Ошибка: {error}',
+        clearConfirm: 'Очистить все сообщения в этом чате?',
+        deleteChatConfirm: 'Удалить чат "{name}"?',
+        lastChatDelete: '❌ Нельзя удалить последний чат.',
+        generating: 'Генерация...',
+        error: '❌ Ошибка: {msg}',
+        stopped: '⏹ Генерация остановлена.',
+        noApiKey: '⚠️ Встроенный API-ключ отсутствует. Выберите Custom провайдер.',
+        customApiMissing: 'Не указан URL для кастомного сервера',
+        customKeyMissing: 'Не указан API-ключ для кастомного сервера',
+        apiKeyMissing: 'API-ключ не настроен',
+        googleApiMissing: 'API-ключ Google не настроен',
+        unknownProvider: 'Неизвестный провайдер',
+        noText: '⚠️ Введите текст или прикрепите фото.',
+        imageAttached: '📎 Изображение прикреплено ({name})'
+      },
+      en: {
+        newChat: 'New Chat',
+        newChatBtn: '➕ New',
+        placeholder: 'Ask anything…',
+        findPlace: '📍 Find place',
+        generateImage: '🎨 Generate image',
+        settings: 'Settings',
+        export: 'Export chat',
+        clear: 'Clear chat',
+        logout: 'Logout',
+        welcome: '👋 Hello, {name}! I\'m Jarvis 3.4. How can I help?',
+        settingsSaved: '⚙️ Settings saved.',
+        noMessages: '⚠️ No messages to export.',
+        chatExported: '📥 Chat downloaded.',
+        authTitle: '🔐 Login to Jarvis 3.4',
+        authSub: 'Enter email, get code and login',
+        sendCode: 'Send code',
+        confirm: 'Confirm',
+        testCode: '🔑 Test code: {code} (also in console)',
+        codeSent: '✅ Code sent to email!',
+        codeError: '❌ Send error. Check EmailJS settings.',
+        invalidEmail: '❌ Enter valid email.',
+        enterCode: '❌ Enter code.',
+        wrongCode: '❌ Invalid code. Try again.',
+        attachPhoto: '📎 Image attached ({name})',
+        searchPlaces: '🔍 Searching: "{query}"...',
+        nothingFound: '📍 Nothing found.',
+        searchError: '❌ Error: {error}',
+        clearConfirm: 'Clear all messages in this chat?',
+        deleteChatConfirm: 'Delete chat "{name}"?',
+        lastChatDelete: '❌ Cannot delete last chat.',
+        generating: 'Generating...',
+        error: '❌ Error: {msg}',
+        stopped: '⏹ Generation stopped.',
+        noApiKey: '⚠️ Built-in API key missing. Choose Custom provider.',
+        customApiMissing: 'Custom server URL not set',
+        customKeyMissing: 'Custom server API key not set',
+        apiKeyMissing: 'API key not set',
+        googleApiMissing: 'Google API key not set',
+        unknownProvider: 'Unknown provider',
+        noText: '⚠️ Enter text or attach image.',
+        imageAttached: '📎 Image attached ({name})'
+      },
+      es: {
+        newChat: 'Nuevo chat',
+        newChatBtn: '➕ Nuevo',
+        placeholder: 'Pregunta algo…',
+        findPlace: '📍 Buscar lugar',
+        generateImage: '🎨 Generar imagen',
+        settings: 'Ajustes',
+        export: 'Exportar chat',
+        clear: 'Limpiar chat',
+        logout: 'Salir',
+        welcome: '👋 ¡Hola, {name}! Soy Jarvis 3.4. ¿Cómo puedo ayudarte?',
+        settingsSaved: '⚙️ Ajustes guardados.',
+        noMessages: '⚠️ No hay mensajes para exportar.',
+        chatExported: '📥 Chat descargado.',
+        authTitle: '🔐 Iniciar sesión en Jarvis 3.4',
+        authSub: 'Ingrese correo, obtenga código y acceda',
+        sendCode: 'Enviar código',
+        confirm: 'Confirmar',
+        testCode: '🔑 Código de prueba: {code} (también en consola)',
+        codeSent: '✅ ¡Código enviado al correo!',
+        codeError: '❌ Error de envío. Verifique la configuración de EmailJS.',
+        invalidEmail: '❌ Ingrese un correo válido.',
+        enterCode: '❌ Ingrese el código.',
+        wrongCode: '❌ Código incorrecto. Inténtelo de nuevo.',
+        attachPhoto: '📎 Imagen adjunta ({name})',
+        searchPlaces: '🔍 Buscando: "{query}"...',
+        nothingFound: '📍 No se encontró nada.',
+        searchError: '❌ Error: {error}',
+        clearConfirm: '¿Borrar todos los mensajes en este chat?',
+        deleteChatConfirm: '¿Eliminar chat "{name}"?',
+        lastChatDelete: '❌ No se puede eliminar el último chat.',
+        generating: 'Generando...',
+        error: '❌ Error: {msg}',
+        stopped: '⏹ Generación detenida.',
+        noApiKey: '⚠️ Falta la clave API integrada. Elija el proveedor Custom.',
+        customApiMissing: 'URL del servidor personalizado no establecida',
+        customKeyMissing: 'Clave API del servidor personalizado no establecida',
+        apiKeyMissing: 'Clave API no configurada',
+        googleApiMissing: 'Clave API de Google no configurada',
+        unknownProvider: 'Proveedor desconocido',
+        noText: '⚠️ Ingrese texto o adjunte una imagen.',
+        imageAttached: '📎 Imagen adjunta ({name})'
+      }
+    };
+
+    function t(key, params = {}) {
+      let str = translations[currentLang]?.[key] || translations['ru'][key] || key;
+      for (let k in params) {
+        str = str.replace(`{${k}}`, params[k]);
+      }
+      return str;
+    }
+
+    // ---------- Инициализация IndexedDB для самообучения ----------
+    let db = null;
+    function initIndexedDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('JarvisMemory', 1);
+        request.onupgradeneeded = function(e) {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('answers')) {
+            const store = db.createObjectStore('answers', { keyPath: 'id', autoIncrement: true });
+            store.createIndex('question', 'question', { unique: false });
+          }
+        };
+        request.onsuccess = function(e) {
+          db = e.target.result;
+          resolve(db);
+        };
+        request.onerror = function(e) {
+          reject(e);
+        };
+      });
+    }
+
+    function saveAnswerToMemory(question, answer) {
+      if (!config.selfLearn || !db) return;
+      const transaction = db.transaction(['answers'], 'readwrite');
+      const store = transaction.objectStore('answers');
+      store.add({ question, answer, timestamp: Date.now() });
+    }
+
+    function searchMemory(question) {
+      return new Promise((resolve) => {
+        if (!db) return resolve(null);
+        const transaction = db.transaction(['answers'], 'readonly');
+        const store = transaction.objectStore('answers');
+        const index = store.index('question');
+        const range = IDBKeyRange.only(question);
+        const request = index.get(range);
+        request.onsuccess = function() {
+          resolve(request.result ? request.result.answer : null);
+        };
+        request.onerror = function() {
+          resolve(null);
+        };
+      });
+    }
+
+    // ---------- Конфиг ----------
+    const config = {
+      provider: 'openrouter',
+      model: 'mistralai/mistral-7b-instruct',
+      systemPrompt: '',
+      userName: 'NODE / хелок',
+      voiceURI: '',
+      empathy: true,
+      deep: true,
+      creative: false,
+      selfLearn: true,
+      sourceCheck: true,
+      showLineNumbers: true,
+      temperature: 0.7,
+      knowledge: 'general',
+      customUrl: '',
+      customApiKey: '',
+      customModel: '',
+      theme: 'dark',
+      lang: 'ru',
+      codeHelper: false,
+      webSearch: false,
+      voiceCommands: false,
+      pluginWeather: false,
+      pluginCalendar: false,
+      pluginNews: false,
+      gitRepoUrl: '',
+      imageApiKey: '',
+      emailjs_service: 'service_xxxxx',
+      emailjs_template: 'template_xxxxx',
+      emailjs_user: 'user_xxxxx'
+    };
+
+    // ---------- Загрузка / сохранение ----------
+    function loadConfig() {
+      try {
+        const saved = localStorage.getItem('jarvis_config');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          Object.assign(config, parsed);
+          applyConfigUI();
+        } else {
+          setDefaults();
+        }
+      } catch(e) { setDefaults(); }
+    }
+
+    function setDefaults() {
+      providerSelect.value = 'openrouter';
+      systemPromptInput.value = '';
+      empathyMode.checked = true;
+      deepAnalysis.checked = true;
+      creativeMode.checked = false;
+      selfLearn.checked = true;
+      sourceCheck.checked = true;
+      showLineNumbers.checked = true;
+      temperatureRange.value = 70;
+      tempValue.textContent = '0.7';
+      knowledgeDomain.value = 'general';
+      customUrl.value = '';
+      customApiKey.value = '';
+      customModel.value = '';
+      themeSelect.value = 'dark';
+      langSelect.value = 'ru';
+      codeHelper.checked = false;
+      webSearch.checked = false;
+      voiceCommands.checked = false;
+      pluginWeather.checked = false;
+      pluginCalendar.checked = false;
+      pluginNews.checked = false;
+      gitRepoUrl.value = '';
+      imageApiKey.value = '';
+      updateModelOptions();
+      modelSelect.value = 'mistralai/mistral-7b-instruct';
+      config.model = 'mistralai/mistral-7b-instruct';
+      populateVoiceList();
+      toggleCustomFields();
+      applyTheme('dark');
+      applyLang('ru');
+    }
+
+    function applyConfigUI() {
+      providerSelect.value = config.provider;
+      systemPromptInput.value = config.systemPrompt || '';
+      empathyMode.checked = config.empathy !== undefined ? config.empathy : true;
+      deepAnalysis.checked = config.deep !== undefined ? config.deep : true;
+      creativeMode.checked = config.creative || false;
+      selfLearn.checked = config.selfLearn !== undefined ? config.selfLearn : true;
+      sourceCheck.checked = config.sourceCheck !== undefined ? config.sourceCheck : true;
+      showLineNumbers.checked = config.showLineNumbers !== undefined ? config.showLineNumbers : true;
+      temperatureRange.value = Math.round((config.temperature || 0.7) * 100);
+      tempValue.textContent = (config.temperature || 0.7).toFixed(1);
+      knowledgeDomain.value = config.knowledge || 'general';
+      customUrl.value = config.customUrl || '';
+      customApiKey.value = config.customApiKey || '';
+      customModel.value = config.customModel || '';
+      themeSelect.value = config.theme || 'dark';
+      langSelect.value = config.lang || 'ru';
+      codeHelper.checked = config.codeHelper || false;
+      webSearch.checked = config.webSearch || false;
+      voiceCommands.checked = config.voiceCommands || false;
+      pluginWeather.checked = config.pluginWeather || false;
+      pluginCalendar.checked = config.pluginCalendar || false;
+      pluginNews.checked = config.pluginNews || false;
+      gitRepoUrl.value = config.gitRepoUrl || '';
+      imageApiKey.value = config.imageApiKey || '';
+      updateModelOptions();
+      const models = modelOptions[config.provider] || [];
+      if (models.some(m => m.value === config.model)) {
+        modelSelect.value = config.model;
+      } else if (models.length) {
+        modelSelect.value = models[0].value;
+        config.model = models[0].value;
+      }
+      populateVoiceList();
+      if (config.voiceURI) voiceSelect.value = config.voiceURI;
+      toggleCustomFields();
+      applyTheme(config.theme || 'dark');
+      applyLang(config.lang || 'ru');
+    }
+
+    function saveConfig() {
+      config.provider = providerSelect.value;
+      config.model = modelSelect.value;
+      config.systemPrompt = systemPromptInput.value.trim();
+      config.voiceURI = voiceSelect.value;
+      config.empathy = empathyMode.checked;
+      config.deep = deepAnalysis.checked;
+      config.creative = creativeMode.checked;
+      config.selfLearn = selfLearn.checked;
+      config.sourceCheck = sourceCheck.checked;
+      config.showLineNumbers = showLineNumbers.checked;
+      config.temperature = parseFloat((temperatureRange.value / 100).toFixed(1));
+      config.knowledge = knowledgeDomain.value;
+      config.customUrl = customUrl.value.trim();
+      config.customApiKey = customApiKey.value.trim();
+      config.customModel = customModel.value.trim();
+      config.theme = themeSelect.value;
+      config.lang = langSelect.value;
+      config.codeHelper = codeHelper.checked;
+      config.webSearch = webSearch.checked;
+      config.voiceCommands = voiceCommands.checked;
+      config.pluginWeather = pluginWeather.checked;
+      config.pluginCalendar = pluginCalendar.checked;
+      config.pluginNews = pluginNews.checked;
+      config.gitRepoUrl = gitRepoUrl.value.trim();
+      config.imageApiKey = imageApiKey.value.trim();
+      localStorage.setItem('jarvis_config', JSON.stringify(config));
+      updateSystemPrompt();
+      applyTheme(config.theme);
+      applyLang(config.lang);
+    }
+
+    function toggleCustomFields() {
+      if (providerSelect.value === 'custom') {
+        customFields.style.display = 'block';
+        modelSelect.style.display = 'none';
+      } else {
+        customFields.style.display = 'none';
+        modelSelect.style.display = 'block';
+      }
+    }
+    providerSelect.addEventListener('change', toggleCustomFields);
+
+    function applyTheme(theme) {
+      document.body.classList.toggle('light', theme === 'light');
+    }
+
+    function applyLang(lang) {
+      currentLang = lang;
+      // Обновляем тексты интерфейса (можно сделать более детально, но основные элементы уже имеют id)
+      // Мы просто обновим плейсхолдеры и тексты кнопок, остальное через t()
+      document.getElementById('textInput').placeholder = t('placeholder');
+      document.querySelector('.new-chat-btn').textContent = t('newChatBtn');
+      document.getElementById('searchPlaceBtn').textContent = t('findPlace');
+      document.getElementById('generateImageBtn').textContent = t('generateImage');
+      document.getElementById('settingsBtn').title = t('settings');
+      document.getElementById('exportBtn').title = t('export');
+      document.getElementById('clearBtn').title = t('clear');
+      document.getElementById('logoutBtn').textContent = t('logout');
+    }
+
+    function updateSystemPrompt() {
+      let base = 'Ты — Jarvis 3.4, продвинутый ИИ-ассистент. ';
+      if (config.knowledge === 'programming') base += 'Ты эксперт в программировании, IT, разработке ПО. ';
+      else if (config.knowledge === 'science') base += 'Ты эксперт в естественных и точных науках. ';
+      else if (config.knowledge === 'creative') base += 'Ты креативный помощник, вдохновляешь на творчество. ';
+      else base += 'Ты обладаешь широкой эрудицией в разных областях. ';
+      if (config.empathy) base += 'Отвечай с эмпатией, пониманием, будь дружелюбным. ';
+      if (config.deep) base += 'Давай структурированные, глубокие, обоснованные ответы. ';
+      if (config.creative) base += 'Будь креативен, предлагай нестандартные идеи. ';
+      if (config.sourceCheck) base += 'Всегда указывай источники информации, если они есть, в конце ответа в блоке "Источники". ';
+      if (config.codeHelper) base += 'Ты — эксперт по анализу кода. Всегда ищи ошибки, предлагай улучшения, давай подробные пояснения. ';
+      if (config.systemPrompt) base += config.systemPrompt + ' ';
+      if (userName) base += `Ты обращаешься к пользователю по имени "${userName}". `;
+      config.finalSystemPrompt = base;
+    }
+
+    // ---------- Модели ----------
+    const modelOptions = {
+      google: [
+        { value: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash (эксп.)' },
+        { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+        { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+      ],
+      openrouter: [
+        { value: 'mistralai/mistral-7b-instruct', label: 'Mistral 7B (free) ⭐' },
+        { value: 'meta-llama/llama-3.1-8b-instruct', label: 'Llama 3.1 8B (free)' },
+        { value: 'qwen/qwen-2.5-7b-instruct', label: 'Qwen 2.5 7B (free)' },
+        { value: 'microsoft/phi-3-mini-128k-instruct', label: 'Phi-3 Mini (free)' },
+        { value: 'deepseek/deepseek-chat', label: 'DeepSeek Chat' },
+        { value: 'google/gemini-2.0-flash-exp:free', label: 'Gemini 2.0 Flash (free)' },
+        { value: 'anthropic/claude-3-haiku', label: 'Claude 3 Haiku' },
+      ],
+      ollama: [
+        { value: 'llama3.1', label: 'Llama 3.1' },
+        { value: 'qwen2.5', label: 'Qwen 2.5' },
+        { value: 'mistral', label: 'Mistral' },
+        { value: 'gemma2', label: 'Gemma 2' },
+        { value: 'codellama', label: 'CodeLlama' },
+      ]
+    };
+
+    function updateModelOptions() {
+      const provider = providerSelect.value;
+      const models = modelOptions[provider] || [];
+      modelSelect.innerHTML = '';
+      models.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.value;
+        opt.textContent = m.label;
+        modelSelect.appendChild(opt);
+      });
+      if (!models.some(m => m.value === config.model)) {
+        if (models.length) modelSelect.value = models[0].value;
+      }
+    }
+
+    // ---------- Голоса ----------
+    function populateVoiceList() {
+      const voices = speechSynthesis.getVoices();
+      if (!voices || voices.length === 0) return;
+      voiceSelect.innerHTML = '';
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = 'Системный голос';
+      voiceSelect.appendChild(defaultOpt);
+      voices.forEach(voice => {
+        const opt = document.createElement('option');
+        opt.value = voice.voiceURI;
+        opt.textContent = `${voice.name} (${voice.lang})`;
+        if (voice.default) opt.selected = true;
+        voiceSelect.appendChild(opt);
+      });
+      if (config.voiceURI) {
+        const exists = Array.from(voiceSelect.options).some(o => o.value === config.voiceURI);
+        if (exists) voiceSelect.value = config.voiceURI;
+      }
+    }
+    if (speechSynthesis) {
+      speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+    setTimeout(populateVoiceList, 500);
+
+    // ---------- Speech Recognition ----------
+    let recognition = null;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SR();
+      recognition.lang = 'ru-RU';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.onresult = function(e) {
+        const transcript = e.results[e.results.length-1][0].transcript.trim();
+        if (transcript) {
+          // Проверка на голосовые команды
+          if (config.voiceCommands) {
+            const lower = transcript.toLowerCase();
+            if (lower.includes('очисти чат') || lower.includes('clear chat')) {
+              clearChat();
+              micBtn.classList.remove('mic-active');
+              return;
+            }
+            if (lower.includes('новый чат') || lower.includes('new chat')) {
+              createNewChat();
+              micBtn.classList.remove('mic-active');
+              return;
+            }
+            if (lower.includes('темная тема') || lower.includes('dark theme')) {
+              themeSelect.value = 'dark';
+              applyTheme('dark');
+              micBtn.classList.remove('mic-active');
+              return;
+            }
+            if (lower.includes('светлая тема') || lower.includes('light theme')) {
+              themeSelect.value = 'light';
+              applyTheme('light');
+              micBtn.classList.remove('mic-active');
+              return;
+            }
+          }
+          textInput.value = transcript;
+          isVoiceInput = true;
+          handleSend(transcript, true);
+        }
+        micBtn.classList.remove('mic-active');
+      };
+      recognition.onerror = function() { micBtn.classList.remove('mic-active'); };
+      recognition.onend = function() { micBtn.classList.remove('mic-active'); };
+    }
+    micBtn.addEventListener('click', function() {
+      if (!recognition) {
+        addSystemMessage('⚠️ Голосовой ввод не поддерживается. Используйте Chrome или Edge.');
+        return;
+      }
+      if (micBtn.classList.contains('mic-active')) {
+        recognition.stop();
+        return;
+      }
+      try {
+        recognition.start();
+        micBtn.classList.add('mic-active');
+      } catch(e) { micBtn.classList.remove('mic-active'); }
+    });
+
+    // ---------- Speech Synthesis ----------
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) return;
+      if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ru-RU';
+      utterance.rate = 0.82;
+      utterance.pitch = 0.6;
+      utterance.volume = 1;
+      if (config.voiceURI) {
+        const voices = speechSynthesis.getVoices();
+        const selected = voices.find(v => v.voiceURI === config.voiceURI);
+        if (selected) utterance.voice = selected;
+      } else {
+        const voices = speechSynthesis.getVoices();
+        const ruVoice = voices.find(v => v.lang.startsWith('ru'));
+        if (ruVoice) utterance.voice = ruVoice;
+      }
+      utterance.onstart = () => document.querySelector('.avatar')?.classList.add('pulse');
+      utterance.onend = () => document.querySelector('.avatar')?.classList.remove('pulse');
+      utterance.onerror = () => document.querySelector('.avatar')?.classList.remove('pulse');
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // ---------- Работа с чатами ----------
+    function loadChats() {
+      try {
+        const saved = localStorage.getItem('jarvis_chats');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          chats = parsed;
+        } else {
+          const firstChat = { id: generateId(), name: t('newChat'), messages: [] };
+          chats = [firstChat];
+        }
+      } catch(e) {
+        const firstChat = { id: generateId(), name: t('newChat'), messages: [] };
+        chats = [firstChat];
+      }
+      if (!currentChatId || !chats.find(c => c.id === currentChatId)) {
+        currentChatId = chats[0]?.id || null;
+      }
+      renderChatList();
+      loadChat(currentChatId);
+    }
+
+    function saveChats() {
+      localStorage.setItem('jarvis_chats', JSON.stringify(chats));
+    }
+
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+    }
+
+    function renderChatList() {
+      chatList.innerHTML = '';
+      chats.forEach(chat => {
+        const item = document.createElement('div');
+        item.className = 'chat-item' + (chat.id === currentChatId ? ' active' : '');
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'chat-name';
+        nameSpan.textContent = chat.name || t('newChat');
+        item.appendChild(nameSpan);
+        const actions = document.createElement('div');
+        actions.className = 'chat-actions';
+        const renameBtn = document.createElement('button');
+        renameBtn.textContent = '✎';
+        renameBtn.title = 'Переименовать';
+        renameBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const newName = prompt('Новое имя чата:', chat.name);
+          if (newName && newName.trim()) {
+            chat.name = newName.trim();
+            saveChats();
+            renderChatList();
+            if (chat.id === currentChatId) {
+              chatTitleInput.value = chat.name;
+            }
+          }
+        });
+        actions.appendChild(renameBtn);
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '🗑';
+        deleteBtn.title = 'Удалить чат';
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (chats.length <= 1) {
+            addSystemMessage('❌ Нельзя удалить последний чат.');
+            return;
+          }
+          if (confirm(t('deleteChatConfirm', { name: chat.name }))) {
+            const idx = chats.indexOf(chat);
+            chats.splice(idx, 1);
+            saveChats();
+            if (chat.id === currentChatId) {
+              currentChatId = chats[0]?.id || null;
+              loadChat(currentChatId);
+            }
+            renderChatList();
+          }
+        });
+        actions.appendChild(deleteBtn);
+        item.appendChild(actions);
+        item.addEventListener('click', () => {
+          if (chat.id !== currentChatId) {
+            currentChatId = chat.id;
+            loadChat(currentChatId);
+            renderChatList();
+            closeSidebar();
+          }
+        });
+        chatList.appendChild(item);
+      });
+    }
+
+    function loadChat(chatId) {
+      const chat = chats.find(c => c.id === chatId);
+      if (!chat) return;
+      chatBox.innerHTML = '';
+      chat.messages.forEach(msg => {
+        if (msg.role === 'system') {
+          addSystemMessage(msg.content);
+        } else if (msg.role === 'user') {
+          if (msg.image) {
+            const imgHtml = `<div style="max-width:200px; border-radius:12px; overflow:hidden; margin:4px 0;"><img src="${msg.image}" style="width:100%; display:block;" /></div>`;
+            addMessage('user', imgHtml, true);
+          }
+          if (msg.content) addMessage('user', msg.content, false);
+        } else if (msg.role === 'assistant') {
+          const htmlContent = renderMarkdown(msg.content);
+          const bubble = addMessage('jarvis', htmlContent, true);
+          if (bubble) {
+            addCodeFeatures(bubble, config.showLineNumbers);
+          }
+        }
+      });
+      chatTitleInput.value = chat.name;
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function createNewChat() {
+      const newChat = { id: generateId(), name: t('newChat'), messages: [] };
+      chats.push(newChat);
+      saveChats();
+      currentChatId = newChat.id;
+      loadChat(currentChatId);
+      renderChatList();
+      closeSidebar();
+    }
+
+    function clearChat() {
+      const chat = chats.find(c => c.id === currentChatId);
+      if (!chat) return;
+      if (chat.messages.length === 0) return;
+      if (confirm(t('clearConfirm'))) {
+        chat.messages = [];
+        saveChats();
+        loadChat(currentChatId);
+      }
+    }
+
+    // ---------- Добавление сообщений ----------
+    function addMessage(role, content, isHtml = false) {
+      const wrapper = document.createElement('div');
+      wrapper.className = `message ${role}`;
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      if (isHtml) {
+        bubble.innerHTML = content;
+      } else {
+        bubble.textContent = content;
+      }
+      wrapper.appendChild(bubble);
+      chatBox.appendChild(wrapper);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      const chat = chats.find(c => c.id === currentChatId);
+      if (chat) {
+        chat.messages.push({ role, content: isHtml ? content : content, image: null });
+        saveChats();
+      }
+      return bubble;
+    }
+
+    function addSystemMessage(text) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'message system';
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = text;
+      wrapper.appendChild(bubble);
+      chatBox.appendChild(wrapper);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      const chat = chats.find(c => c.id === currentChatId);
+      if (chat) {
+        chat.messages.push({ role: 'system', content: text, image: null });
+        saveChats();
+      }
+    }
+
+    function showThinking() {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'message jarvis';
+      wrapper.id = 'thinking-message';
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML = `<div class="thinking-dots"><span></span><span></span><span></span></div>`;
+      wrapper.appendChild(bubble);
+      chatBox.appendChild(wrapper);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function hideThinking() {
+      const el = document.getElementById('thinking-message');
+      if (el) el.remove();
+    }
+
+    // ---------- Добавление кнопок и номеров строк ----------
+    function addCodeFeatures(bubbleElement, showLineNumbers) {
+      bubbleElement.querySelectorAll('pre').forEach(pre => {
+        const code = pre.querySelector('code');
+        if (!code) return;
+        if (showLineNumbers) {
+          const lines = code.textContent.split('\n').length - 1;
+          if (lines > 1) {
+            const lineNumbers = document.createElement('span');
+            lineNumbers.className = 'line-numbers';
+            let nums = '';
+            for (let i = 1; i <= lines; i++) nums += i + '\n';
+            lineNumbers.textContent = nums;
+            pre.insertBefore(lineNumbers, code);
+          }
+        }
+        const toolbar = document.createElement('div');
+        toolbar.className = 'code-toolbar';
+        const copyBtn = document.createElement('button');
+        copyBtn.textContent = '📋 Копировать';
+        copyBtn.addEventListener('click', () => {
+          const text = code.textContent;
+          navigator.clipboard.writeText(text).then(() => {
+            copyBtn.textContent = '✅';
+            setTimeout(() => copyBtn.textContent = '📋 Копировать', 2000);
+          });
+        });
+        toolbar.appendChild(copyBtn);
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = '⬇ Скачать';
+        downloadBtn.addEventListener('click', () => {
+          const text = code.textContent;
+          let ext = 'txt';
+          const langClass = [...code.classList].find(c => c.startsWith('language-'));
+          if (langClass) {
+            const lang = langClass.replace('language-', '').toLowerCase();
+            const map = { python:'py', javascript:'js', typescript:'ts', html:'html', css:'css', json:'json', xml:'xml', yaml:'yaml', yml:'yml', markdown:'md', bash:'sh', shell:'sh', sql:'sql', php:'php', java:'java', c:'c', cpp:'cpp', csharp:'cs', go:'go', rust:'rs', swift:'swift', ruby:'rb', perl:'pl', lua:'lua', r:'r', kotlin:'kt', scala:'scala', dart:'dart', plaintext:'txt' };
+            ext = map[lang] || 'txt';
+          }
+          const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `code.${ext}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        });
+        toolbar.appendChild(downloadBtn);
+        pre.appendChild(toolbar);
+      });
+    }
+
+    // ---------- Рендеринг Markdown ----------
+    function renderMarkdown(text) {
+      const parts = text.split(/(```(?:\w+)?\n[\s\S]*?```)/g);
+      let html = '';
+      for (let part of parts) {
+        if (part.startsWith('```')) {
+          const match = part.match(/```(\w+)?\n([\s\S]*?)```/);
+          if (match) {
+            const lang = match[1] || 'plaintext';
+            const code = escapeHtml(match[2]);
+            html += `<pre><code class="language-${lang}">${code}</code></pre>`;
+          }
+        } else {
+          let textPart = part;
+          textPart = textPart.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          textPart = textPart.replace(/\*(.*?)\*/g, '<em>$1</em>');
+          textPart = textPart.replace(/`([^`]+)`/g, '<code>$1</code>');
+          textPart = textPart.replace(/^# (.*$)/gm, '<h3>$1</h3>');
+          textPart = textPart.replace(/^## (.*$)/gm, '<h4>$1</h4>');
+          textPart = textPart.replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>');
+          textPart = textPart.replace(/^- (.*$)/gm, '<li>$1</li>');
+          textPart = textPart.replace(/\n/g, '<br>');
+          html += textPart;
+        }
+      }
+      return html;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---------- Web-поиск (DuckDuckGo) ----------
+    async function webSearchQuery(query) {
+      try {
+        const resp = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`);
+        if (!resp.ok) throw new Error('Ошибка поиска');
+        const data = await resp.json();
+        let answer = '';
+        if (data.AbstractText) {
+          answer += data.AbstractText + '\n';
+        }
+        if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+          answer += '\nСвязанные ссылки:\n';
+          data.RelatedTopics.slice(0, 3).forEach(topic => {
+            if (topic.Text) {
+              answer += `- ${topic.Text}\n`;
+            }
+          });
+        }
+        if (!answer) answer = 'Ничего не найдено.';
+        return answer;
+      } catch (e) {
+        return `Ошибка поиска: ${e.message}`;
+      }
+    }
+
+    // ---------- Генерация изображений (Hugging Face) ----------
+    async function generateImage(prompt) {
+      const apiKey = config.imageApiKey;
+      if (!apiKey) {
+        addSystemMessage('⚠️ Укажите API-ключ для генерации изображений в настройках.');
+        return null;
+      }
+      try {
+        const resp = await fetch('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ inputs: prompt })
+        });
+        if (!resp.ok) {
+          const err = await resp.text();
+          throw new Error(`API error: ${resp.status} - ${err}`);
+        }
+        const blob = await resp.blob();
+        return URL.createObjectURL(blob);
+      } catch (e) {
+        addSystemMessage(`❌ Ошибка генерации: ${e.message}`);
+        return null;
+      }
+    }
+
+    // ---------- Плагины ----------
+    async function getWeather(city) {
+      // Заглушка - в реальности используйте OpenWeatherMap
+      return `Погода в ${city}: +22°C, ясно. (Данные заглушка)`;
+    }
+
+    async function getCalendarEvents() {
+      // Заглушка
+      return 'Сегодня: встреча в 15:00, звонок в 17:30.';
+    }
+
+    async function getNews() {
+      // Заглушка
+      return 'Новости: Главные события дня... (заглушка)';
+    }
+
+    // ---------- Git анализ (заглушка) ----------
+    async function analyzeGitRepo(url) {
+      // Здесь можно использовать API GitHub, но для простоты заглушка
+      return `Репозиторий ${url} проанализирован. Найдено 12 файлов, 3 ошибки в коде. (заглушка)`;
+    }
+
+    // ---------- Отправка сообщения ----------
+    async function handleSend(text, speak = false) {
+      const trimmed = text.trim();
+      if (!trimmed && !pendingImage) {
+        addSystemMessage('⚠️ Введите текст или прикрепите фото.');
+        return;
+      }
+      if (isGenerating) return;
+
+      // Проверка на плагины
+      if (trimmed.toLowerCase().includes('погода') && config.pluginWeather) {
+        const city = trimmed.replace(/погода\s*/i, '').trim() || 'Москва';
+        const weather = await getWeather(city);
+        addMessage('user', trimmed, false);
+        addMessage('jarvis', weather, false);
+        return;
+      }
+      if (trimmed.toLowerCase().includes('календарь') && config.pluginCalendar) {
+        const events = await getCalendarEvents();
+        addMessage('user', trimmed, false);
+        addMessage('jarvis', events, false);
+        return;
+      }
+      if (trimmed.toLowerCase().includes('новости') && config.pluginNews) {
+        const news = await getNews();
+        addMessage('user', trimmed, false);
+        addMessage('jarvis', news, false);
+        return;
+      }
+
+      // Web-поиск
+      if (config.webSearch && (trimmed.includes('найти') || trimmed.includes('поиск') || trimmed.includes('search'))) {
+        const query = trimmed.replace(/найти|поиск|search\s*/i, '').trim();
+        if (query) {
+          addMessage('user', trimmed, false);
+          showThinking();
+          const result = await webSearchQuery(query);
+          hideThinking();
+          addMessage('jarvis', result, false);
+          return;
+        }
+      }
+
+      if (pendingImage) {
+        const imageData = pendingImage;
+        const userText = trimmed || 'Опиши это изображение';
+        if (trimmed) addMessage('user', trimmed, false);
+        const imgHtml = `<div style="max-width:200px; border-radius:12px; overflow:hidden; margin:4px 0;"><img src="${imageData}" style="width:100%; display:block;" /></div>`;
+        addMessage('user', imgHtml, true);
+        pendingImage = null;
+        attachBtn.classList.remove('has-attachment');
+        await sendMultimodalRequest(userText, imageData, speak);
+        return;
+      }
+
+      addMessage('user', trimmed, false);
+      textInput.value = '';
+
+      showThinking();
+      document.querySelector('.avatar')?.classList.add('pulse');
+      isGenerating = true;
+      stopBtn.style.display = 'flex';
+      sendBtn.style.display = 'none';
+
+      const messages = [];
+      updateSystemPrompt();
+      const systemMsg = config.finalSystemPrompt || 'Ты — Jarvis 3.4, умный помощник.';
+      messages.push({ role: 'system', content: systemMsg });
+
+      const chat = chats.find(c => c.id === currentChatId);
+      if (chat && config.selfLearn) {
+        const history = chat.messages.filter(m => m.role !== 'system' && !m.image).slice(-10);
+        history.forEach(m => {
+          messages.push({ role: m.role, content: m.content });
+        });
+      }
+
+      try {
+        let answer;
+        // Проверка памяти (самообучение)
+        if (config.selfLearn && db) {
+          const mem = await searchMemory(trimmed);
+          if (mem) {
+            answer = mem;
+          }
+        }
+        if (!answer) {
+          answer = await callAI(messages);
+          if (config.selfLearn && db) {
+            saveAnswerToMemory(trimmed, answer);
+          }
+        }
+
+        hideThinking();
+        document.querySelector('.avatar')?.classList.remove('pulse');
+
+        let finalAnswer = answer;
+        let sources = '';
+        if (config.sourceCheck) {
+          const urlRegex = /(https?:\/\/[^\s]+)/g;
+          const urls = answer.match(urlRegex);
+          if (urls && urls.length > 0) {
+            sources = '<div class="source-block">📚 Источники:<ul>';
+            const unique = [...new Set(urls)];
+            unique.forEach(u => {
+              sources += `<li><a href="${u}" target="_blank">${u}</a></li>`;
+            });
+            sources += '</ul></div>';
+          }
+        }
+
+        const htmlContent = renderMarkdown(finalAnswer) + (sources || '');
+        const bubble = addMessage('jarvis', htmlContent, true);
+        if (bubble) {
+          addCodeFeatures(bubble, config.showLineNumbers);
+        }
+
+        if (speak) {
+          const plainText = finalAnswer.replace(/<[^>]+>/g, '');
+          speakText(plainText);
+        }
+
+      } catch (error) {
+        hideThinking();
+        document.querySelector('.avatar')?.classList.remove('pulse');
+        let errorMsg = error.message;
+        if (errorMsg.includes('404')) errorMsg += ' Попробуйте другую модель.';
+        addSystemMessage(`❌ Ошибка: ${errorMsg}`);
+        console.error(error);
+      } finally {
+        isGenerating = false;
+        stopBtn.style.display = 'none';
+        sendBtn.style.display = 'flex';
+        abortController = null;
+        isVoiceInput = false;
+      }
+    }
+
+    // ---------- Мультимодальный запрос ----------
+    async function sendMultimodalRequest(text, imageBase64, speak) {
+      showThinking();
+      document.querySelector('.avatar')?.classList.add('pulse');
+      isGenerating = true;
+      stopBtn.style.display = 'flex';
+      sendBtn.style.display = 'none';
+
+      const messages = [];
+      updateSystemPrompt();
+      const systemMsg = config.finalSystemPrompt || 'Ты — Jarvis 3.4, умный помощник.';
+      messages.push({ role: 'system', content: systemMsg });
+
+      const userContent = [
+        { type: 'text', text: text || 'Опиши это изображение' },
+        { type: 'image_url', image_url: { url: imageBase64 } }
+      ];
+
+      try {
+        const answer = await callAIMultimodal(messages, userContent);
+        hideThinking();
+        document.querySelector('.avatar')?.classList.remove('pulse');
+
+        let finalAnswer = answer;
+        let sources = '';
+        if (config.sourceCheck) {
+          const urlRegex = /(https?:\/\/[^\s]+)/g;
+          const urls = answer.match(urlRegex);
+          if (urls && urls.length > 0) {
+            sources = '<div class="source-block">📚 Источники:<ul>';
+            const unique = [...new Set(urls)];
+            unique.forEach(u => {
+              sources += `<li><a href="${u}" target="_blank">${u}</a></li>`;
+            });
+            sources += '</ul></div>';
+          }
+        }
+
+        const htmlContent = renderMarkdown(finalAnswer) + (sources || '');
+        const bubble = addMessage('jarvis', htmlContent, true);
+        if (bubble) {
+          addCodeFeatures(bubble, config.showLineNumbers);
+        }
+
+        if (speak) {
+          const plainText = finalAnswer.replace(/<[^>]+>/g, '');
+          speakText(plainText);
+        }
+
+      } catch (error) {
+        hideThinking();
+        document.querySelector('.avatar')?.classList.remove('pulse');
+        addSystemMessage(`❌ Ошибка: ${error.message}`);
+        console.error(error);
+      } finally {
+        isGenerating = false;
+        stopBtn.style.display = 'none';
+        sendBtn.style.display = 'flex';
+        abortController = null;
+      }
+    }
+
+    // ---------- Вызов AI (текст) ----------
+    async function callAI(messages) {
+      const provider = config.provider;
+      const model = config.model;
+      const temperature = config.temperature || 0.7;
+
+      abortController = new AbortController();
+      const signal = abortController.signal;
+
+      if (provider === 'custom') {
+        const url = config.customUrl;
+        const apiKey = config.customApiKey;
+        const customModelName = config.customModel || 'gpt-4';
+        if (!url) throw new Error(t('customApiMissing'));
+        if (!apiKey) throw new Error(t('customKeyMissing'));
+        const payload = { model: customModelName, messages, temperature, max_tokens: 2048, stream: false };
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+          body: JSON.stringify(payload),
+          signal
+        });
+        if (!resp.ok) {
+          const err = await resp.text();
+          throw new Error(`Custom API error (${resp.status}): ${err}`);
+        }
+        const data = await resp.json();
+        return data?.choices?.[0]?.message?.content || 'Ответ не получен.';
+      }
+
+      if (provider === 'openrouter') {
+        const apiKey = DEFAULT_API_KEY;
+        if (!apiKey) throw new Error(t('apiKeyMissing'));
+        const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'Jarvis 3.4'
+          },
+          body: JSON.stringify({ model, messages, temperature, max_tokens: 2048 }),
+          signal
+        });
+        if (!resp.ok) {
+          const err = await resp.text();
+          throw new Error(`OpenRouter error (${resp.status}): ${err}`);
+        }
+        const data = await resp.json();
+        return data?.choices?.[0]?.message?.content || 'Ответ не получен.';
+      }
+
+      if (provider === 'google') {
+        const apiKey = DEFAULT_API_KEY;
+        if (!apiKey) throw new Error(t('googleApiMissing'));
+        const contents = messages.map(msg => ({
+          role: msg.role === 'assistant' ? 'model' : msg.role,
+          parts: [{ text: msg.content }]
+        }));
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents, generationConfig: { temperature } }),
+          signal
+        });
+        if (!resp.ok) {
+          const err = await resp.text();
+          throw new Error(`Google API error (${resp.status}): ${err}`);
+        }
+        const data = await resp.json();
+        return data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Извините, ответ не получен.';
+      }
+
+      if (provider === 'ollama') {
+        let prompt = '';
+        for (const msg of messages) {
+          if (msg.role === 'system') prompt += `System: ${msg.content}\n`;
+          else if (msg.role === 'user') prompt += `User: ${msg.content}\n`;
+          else if (msg.role === 'assistant') prompt += `Assistant: ${msg.content}\n`;
+        }
+        prompt += 'Assistant: ';
+        const resp = await fetch('http://localhost:11434/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, prompt, stream: false, options: { temperature } }),
+          signal
+        });
+        if (!resp.ok) throw new Error(`Ollama error (${resp.status})`);
+        const data = await resp.json();
+        return data.response || 'Нет ответа от модели.';
+      }
+
+      throw new Error(t('unknownProvider'));
+    }
+
+    // ---------- Мультимодальный вызов ----------
+    async function callAIMultimodal(messages, userContent) {
+      const provider = config.provider;
+      const temperature = config.temperature || 0.7;
+
+      abortController = new AbortController();
+      const signal = abortController.signal;
+
+      if (provider === 'custom') {
+        const url = config.customUrl;
+        const apiKey = config.customApiKey;
+        const customModelName = config.customModel || 'gpt-4';
+        if (!url) throw new Error(t('customApiMissing'));
+        if (!apiKey) throw new Error(t('customKeyMissing'));
+        const payload = {
+          model: customModelName,
+          messages: [
+            { role: 'system', content: messages[0]?.content || 'Ты — Jarvis 3.4.' },
+            { role: 'user', content: userContent }
+          ],
+          temperature,
+          max_tokens: 2048,
+        };
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+          body: JSON.stringify(payload),
+          signal
+        });
+        if (!resp.ok) {
+          const err = await resp.text();
+          throw new Error(`Custom API error (${resp.status}): ${err}`);
+        }
+        const data = await resp.json();
+        return data?.choices?.[0]?.message?.content || 'Ответ не получен.';
+      }
+
+      if (provider === 'openrouter') {
+        const apiKey = DEFAULT_API_KEY;
+        if (!apiKey) throw new Error(t('apiKeyMissing'));
+        const payload = {
+          model: config.model,
+          messages: [
+            { role: 'system', content: messages[0]?.content || 'Ты — Jarvis 3.4.' },
+            { role: 'user', content: userContent }
+          ],
+          temperature,
+          max_tokens: 2048,
+        };
+        const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'Jarvis 3.4'
+          },
+          body: JSON.stringify(payload),
+          signal
+        });
+        if (!resp.ok) {
+          const err = await resp.text();
+          throw new Error(`OpenRouter multimodal error (${resp.status}): ${err}`);
+        }
+        const data = await resp.json();
+        return data?.choices?.[0]?.message?.content || 'Ответ не получен.';
+      }
+
+      // Для других провайдеров мультимодальность не поддерживается
+      const textMsg = userContent.find(c => c.type === 'text');
+      const text = textMsg ? textMsg.text : 'Опиши изображение';
+      const msgs = [
+        { role: 'system', content: messages[0]?.content || 'Ты — Jarvis 3.4.' },
+        { role: 'user', content: text }
+      ];
+      return await callAI(msgs);
+    }
+
+    // ---------- Остановка ----------
+    stopBtn.addEventListener('click', function() {
+      if (abortController) {
+        abortController.abort();
+        abortController = null;
+        isGenerating = false;
+        hideThinking();
+        document.querySelector('.avatar')?.classList.remove('pulse');
+        stopBtn.style.display = 'none';
+        sendBtn.style.display = 'flex';
+        addSystemMessage(t('stopped'));
+      }
+    });
+
+    // ---------- Экспорт в Markdown ----------
+    exportBtn.addEventListener('click', function() {
+      const chat = chats.find(c => c.id === currentChatId);
+      if (!chat || chat.messages.length === 0) {
+        addSystemMessage(t('noMessages'));
+        return;
+      }
+      let text = `# Диалог с Jarvis 3.4\n\n`;
+      text += `**Чат:** ${chat.name}\n\n`;
+      chat.messages.forEach(msg => {
+        if (msg.role === 'system') return;
+        const role = msg.role === 'user' ? '**Пользователь**' : '**Jarvis 3.4**';
+        let content = msg.content || '';
+        if (msg.image) content += ' ![изображение]()';
+        text += `${role}: ${content}\n\n`;
+      });
+      const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `чат_${chat.name}_${new Date().toISOString().slice(0,10)}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addSystemMessage(t('chatExported'));
+    });
+
+    // ---------- Очистка ----------
+    clearBtn.addEventListener('click', clearChat);
+
+    // ---------- Прикрепление фото ----------
+    attachBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        pendingImage = event.target.result;
+        attachBtn.classList.add('has-attachment');
+        addSystemMessage(t('attachPhoto', { name: file.name }));
+        const imgHtml = `<div style="max-width:200px; border-radius:12px; overflow:hidden; margin:4px 0;"><img src="${pendingImage}" style="width:100%; display:block;" /></div>`;
+        addMessage('user', imgHtml, true);
+        fileInput.value = '';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // ---------- Поиск места ----------
+    searchPlaceBtn.addEventListener('click', function() {
+      const query = prompt(t('findPlace'));
+      if (!query || query.trim() === '') return;
+      findPlace(query.trim());
+    });
+
+    async function findPlace(query) {
+      addSystemMessage(t('searchPlaces', { query }));
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=3`;
+        const resp = await fetch(url, { headers: { 'User-Agent': 'JarvisAssistant/3.4' } });
+        if (!resp.ok) throw new Error('Ошибка геокодера');
+        const data = await resp.json();
+        if (!data || data.length === 0) {
+          addSystemMessage(t('nothingFound'));
+          return;
+        }
+        let html = '<div style="margin:4px 0;"><strong>📍 Результаты:</strong><ul style="margin:6px 0; padding-left:18px;">';
+        data.slice(0, 3).forEach(item => {
+          const name = item.display_name || item.name || 'Без названия';
+          const lat = parseFloat(item.lat).toFixed(4);
+          const lon = parseFloat(item.lon).toFixed(4);
+          const mapUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}&zoom=15`;
+          html += `<li>${name}<br><a href="${mapUrl}" target="_blank">📍 Открыть карту</a> (${lat}, ${lon})</li>`;
+        });
+        html += '</ul>';
+        const first = data[0];
+        if (first) {
+          const lat = parseFloat(first.lat).toFixed(4);
+          const lon = parseFloat(first.lon).toFixed(4);
+          html += `<iframe width="100%" height="200" style="border:0; border-radius:12px; margin-top:6px;" src="https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(lon)-0.01}%2C${parseFloat(lat)-0.01}%2C${parseFloat(lon)+0.01}%2C${parseFloat(lat)+0.01}&layer=mapnik&marker=${lat}%2C${lon}" allowfullscreen></iframe>`;
+        }
+        html += '</div>';
+        const bubble = addMessage('jarvis', html, true);
+        if (bubble) {
+          bubble.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+        }
+      } catch (error) {
+        addSystemMessage(t('searchError', { error: error.message }));
+      }
+    }
+
+    // ---------- Генерация изображений ----------
+    generateImageBtn.addEventListener('click', function() {
+      const prompt = prompt('🎨 Введите описание изображения:');
+      if (!prompt || prompt.trim() === '') return;
+      handleImageGeneration(prompt.trim());
+    });
+
+    async function handleImageGeneration(prompt) {
+      addSystemMessage(`🎨 Генерация изображения: "${prompt}"...`);
+      const imageUrl = await generateImage(prompt);
+      if (imageUrl) {
+        const html = `<div style="max-width:100%; margin:4px 0;"><img src="${imageUrl}" style="max-width:100%; border-radius:12px;" /></div>`;
+        addMessage('jarvis', html, true);
+      }
+    }
+
+    // ---------- Git анализ ----------
+    analyzeGitBtn.addEventListener('click', async function() {
+      const url = gitRepoUrl.value.trim();
+      if (!url) {
+        addSystemMessage('⚠️ Введите URL репозитория.');
+        return;
+      }
+      addSystemMessage(`🔍 Анализ репозитория: ${url}...`);
+      const result = await analyzeGitRepo(url);
+      addMessage('jarvis', result, false);
+    });
+
+    // ---------- События ----------
+    newChatBtn.addEventListener('click', createNewChat);
+
+    chatTitleInput.addEventListener('change', function() {
+      const newName = this.value.trim();
+      if (!newName) return;
+      const chat = chats.find(c => c.id === currentChatId);
+      if (chat) {
+        chat.name = newName;
+        saveChats();
+        renderChatList();
+      }
+    });
+
+    sendBtn.addEventListener('click', () => handleSend(textInput.value, false));
+    textInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend(textInput.value, false);
+      }
+    });
+
+    // ---------- Настройки ----------
+    settingsBtn.addEventListener('click', () => {
+      providerSelect.value = config.provider;
+      systemPromptInput.value = config.systemPrompt || '';
+      empathyMode.checked = config.empathy;
+      deepAnalysis.checked = config.deep;
+      creativeMode.checked = config.creative;
+      selfLearn.checked = config.selfLearn;
+      sourceCheck.checked = config.sourceCheck;
+      showLineNumbers.checked = config.showLineNumbers;
+      temperatureRange.value = Math.round(config.temperature * 100);
+      tempValue.textContent = config.temperature.toFixed(1);
+      knowledgeDomain.value = config.knowledge;
+      customUrl.value = config.customUrl || '';
+      customApiKey.value = config.customApiKey || '';
+      customModel.value = config.customModel || '';
+      themeSelect.value = config.theme || 'dark';
+      langSelect.value = config.lang || 'ru';
+      codeHelper.checked = config.codeHelper || false;
+      webSearch.checked = config.webSearch || false;
+      voiceCommands.checked = config.voiceCommands || false;
+      pluginWeather.checked = config.pluginWeather || false;
+      pluginCalendar.checked = config.pluginCalendar || false;
+      pluginNews.checked = config.pluginNews || false;
+      gitRepoUrl.value = config.gitRepoUrl || '';
+      imageApiKey.value = config.imageApiKey || '';
+      updateModelOptions();
+      modelSelect.value = config.model || '';
+      populateVoiceList();
+      if (config.voiceURI) voiceSelect.value = config.voiceURI;
+      toggleCustomFields();
+      modal.classList.add('active');
+    });
+    modalClose.addEventListener('click', () => modal.classList.remove('active'));
+    modalSave.addEventListener('click', () => {
+      saveConfig();
+      modal.classList.remove('active');
+      addSystemMessage(t('settingsSaved'));
+    });
+    providerSelect.addEventListener('change', () => {
+      updateModelOptions();
+      toggleCustomFields();
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.remove('active');
+    });
+
+    temperatureRange.addEventListener('input', function() {
+      const val = (this.value / 100).toFixed(1);
+      tempValue.textContent = val;
+    });
+
+    // ---------- Боковая панель ----------
+    function toggleSidebar() {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('active');
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+    }
+
+    menuToggle.addEventListener('click', toggleSidebar);
+    sidebarOverlay.addEventListener('click', closeSidebar);
+
+    // ---------- Авторизация ----------
+    let generatedCode = '';
+
+    async function sendVerificationCode(email) {
+      const serviceID = config.emailjs_service || 'service_xxxxx';
+      const templateID = config.emailjs_template || 'template_xxxxx';
+      const userID = config.emailjs_user || 'user_xxxxx';
+
+      if (serviceID === 'service_xxxxx' || templateID === 'template_xxxxx' || userID === 'user_xxxxx') {
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        generatedCode = code;
+        authMessage.textContent = t('testCode', { code });
+        authMessage.style.color = '#6bff6b';
+        console.log(`📧 Код для ${email}: ${code}`);
+        return true;
+      }
+
+      try {
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        generatedCode = code;
+        const templateParams = {
+          to_email: email,
+          code: code,
+          user_name: 'Пользователь'
+        };
+        await emailjs.send(serviceID, templateID, templateParams, { publicKey: userID });
+        authMessage.textContent = t('codeSent');
+        authMessage.style.color = '#6bff6b';
+        return true;
+      } catch (error) {
+        console.error('EmailJS error:', error);
+        authMessage.textContent = t('codeError');
+        authMessage.style.color = '#ff6b6b';
+        return false;
+      }
+    }
+
+    sendCodeBtn.addEventListener('click', async function() {
+      const email = authEmail.value.trim();
+      if (!email || !email.includes('@')) {
+        authMessage.textContent = t('invalidEmail');
+        authMessage.style.color = '#ff6b6b';
+        return;
+      }
+      authMessage.textContent = '⏳ Отправка...';
+      authMessage.style.color = '#b0c4ff';
+      await sendVerificationCode(email);
+    });
+
+    confirmBtn.addEventListener('click', function() {
+      const code = authCode.value.trim();
+      if (!code) {
+        authMessage.textContent = t('enterCode');
+        authMessage.style.color = '#ff6b6b';
+        return;
+      }
+      if (code === generatedCode) {
+        userEmail = authEmail.value.trim();
+        userName = userEmail.split('@')[0] || 'Пользователь';
+        userNameDisplay.textContent = userName;
+        userEmailDisplay.textContent = userEmail;
+        userAvatar.textContent = userName.charAt(0).toUpperCase();
+        authOverlay.classList.add('hidden');
+        localStorage.setItem('jarvis_auth', 'true');
+        localStorage.setItem('jarvis_user', JSON.stringify({ email: userEmail, name: userName }));
+        loadChats();
+        addSystemMessage(t('welcome', { name: userName }));
+        if (!DEFAULT_API_KEY && config.provider !== 'custom' && config.provider !== 'ollama') {
+          addSystemMessage(t('noApiKey'));
+        }
+        // Инициализируем IndexedDB
+        initIndexedDB().catch(console.warn);
+      } else {
+        authMessage.textContent = t('wrongCode');
+        authMessage.style.color = '#ff6b6b';
+      }
+    });
+
+    function checkSession() {
+      const auth = localStorage.getItem('jarvis_auth');
+      if (auth === 'true') {
+        const userData = localStorage.getItem('jarvis_user');
+        if (userData) {
+          try {
+            const parsed = JSON.parse(userData);
+            userEmail = parsed.email || '';
+            userName = parsed.name || 'Пользователь';
+          } catch(e) {}
+        }
+        userNameDisplay.textContent = userName;
+        userEmailDisplay.textContent = userEmail;
+        userAvatar.textContent = userName.charAt(0).toUpperCase();
+        authOverlay.classList.add('hidden');
+        loadChats();
+        addSystemMessage(t('welcome', { name: userName }));
+        if (!DEFAULT_API_KEY && config.provider !== 'custom' && config.provider !== 'ollama') {
+          addSystemMessage(t('noApiKey'));
+        }
+        initIndexedDB().catch(console.warn);
+      } else {
+        authOverlay.classList.remove('hidden');
+      }
+    }
+
+    logoutBtn.addEventListener('click', function() {
+      if (confirm('Выйти из аккаунта?')) {
+        localStorage.removeItem('jarvis_auth');
+        localStorage.removeItem('jarvis_user');
+        localStorage.removeItem('jarvis_chats');
+        location.reload();
+      }
+    });
+
+    // ---------- Инициализация ----------
+    loadConfig();
+    setTimeout(populateVoiceList, 600);
+    checkSession();
+
+    if (!DEFAULT_API_KEY && config.provider !== 'custom' && config.provider !== 'ollama') {
+      setTimeout(() => {
+        if (!authOverlay.classList.contains('hidden')) return;
+        addSystemMessage(t('noApiKey'));
+      }, 1000);
+    }
+
+  })();
+</script>
+</body>
+</html>
