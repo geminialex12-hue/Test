@@ -8,7 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
-    /* ——— стили (идентичны предыдущей версии, добавляем только для плагинов) ——— */
+    /* ——— Стили (полный блок) ——— */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #080b12; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; color: #e4e9f2; transition: background 0.3s; }
     body.light { background: #f0f2f5; color: #1a1a2e; }
@@ -130,7 +130,7 @@
     #adminPanel .admin-actions button:hover { background: rgba(74,106,255,0.25); }
     #adminPanel .admin-actions .danger { background: rgba(255,70,70,0.12); color: #ff6b6b; }
     #adminPanel .admin-actions .danger:hover { background: rgba(255,70,70,0.2); }
-    /* Стили для плагинов */
+    /* Плагины */
     #pluginCreator .modal { max-width: 560px; }
     #pluginCreator .generated-code { background: #0d1117; border-radius: 12px; padding: 12px; margin-top: 12px; white-space: pre-wrap; font-family: monospace; font-size: 13px; max-height: 300px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.06); }
     body.light #pluginCreator .generated-code { background: #f0f2f5; border-color: rgba(0,0,0,0.06); color: #1a1a2e; }
@@ -1183,7 +1183,6 @@
     // --- События плагинов ---
     pluginBtn.addEventListener('click', () => {
       pluginCreator.classList.add('active');
-      // Сбрасываем поля
       pluginName.value = '';
       pluginCommand.value = '';
       pluginDesc.value = '';
@@ -1199,7 +1198,6 @@
       pluginGeneratedCode.textContent = result.code;
       pluginGeneratedCode.style.display = 'block';
       downloadPluginBtn.style.display = 'inline-block';
-      // Сохраняем в список
       const plugin = {
         name: result.name,
         command: result.command,
