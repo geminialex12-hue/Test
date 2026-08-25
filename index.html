@@ -285,8 +285,7 @@
     </div>
     <label>Git репозиторий</label>
     <div style="display:flex; gap:8px;"><input id="gitRepoUrl" type="text" placeholder="https://github.com/user/repo" style="flex:1;" /><button id="analyzeGitBtn" style="padding:6px 14px; background:#4a6aff; border:none; border-radius:30px; color:white; cursor:pointer;">Анализ</button></div>
-    <label>API-ключ Hugging Face (генерация)</label>
-    <input id="imageApiKey" type="password" placeholder="hf_xxxx..." />
+    <!-- Поле API-ключа для генерации УБРАНО -->
     <label>Температура</label>
     <div class="range-wrap"><span>0.0</span><input type="range" id="temperatureRange" min="0" max="200" value="70" /><span id="tempValue">0.7</span></div>
     <label>Область знаний</label>
@@ -403,7 +402,7 @@
     const pluginNews = document.getElementById('pluginNews');
     const gitRepoUrl = document.getElementById('gitRepoUrl');
     const analyzeGitBtn = document.getElementById('analyzeGitBtn');
-    const imageApiKey = document.getElementById('imageApiKey');
+    // imageApiKey полностью удалён
 
     // Plugin creator elements
     const pluginCreator = document.getElementById('pluginCreator');
@@ -480,7 +479,7 @@
       pluginCalendar: false,
       pluginNews: false,
       gitRepoUrl: '',
-      imageApiKey: '',
+      // imageApiKey удалён
       emailjs_service: 'service_xxxxx',
       emailjs_template: 'template_xxxxx',
       emailjs_user: 'user_xxxxx'
@@ -521,7 +520,6 @@
       pluginCalendar.checked = false;
       pluginNews.checked = false;
       gitRepoUrl.value = '';
-      imageApiKey.value = '';
       updateModelOptions();
       modelSelect.value = 'mistralai/mistral-7b-instruct';
       config.model = 'mistralai/mistral-7b-instruct';
@@ -554,7 +552,6 @@
       pluginCalendar.checked = config.pluginCalendar || false;
       pluginNews.checked = config.pluginNews || false;
       gitRepoUrl.value = config.gitRepoUrl || '';
-      imageApiKey.value = config.imageApiKey || '';
       updateModelOptions();
       const models = modelOptions[config.provider] || [];
       if (models.some(m => m.value === config.model)) {
@@ -594,7 +591,6 @@
       config.pluginCalendar = pluginCalendar.checked;
       config.pluginNews = pluginNews.checked;
       config.gitRepoUrl = gitRepoUrl.value.trim();
-      config.imageApiKey = imageApiKey.value.trim();
       localStorage.setItem('jarvis_config', JSON.stringify(config));
       updateSystemPrompt();
       applyTheme(config.theme);
@@ -1048,19 +1044,28 @@
       } catch(e) { return `Ошибка поиска: ${e.message}`; }
     }
 
+    // ---------- Генерация изображений через Pollinations.ai (без ключа) ----------
     async function generateImage(prompt) {
-      const apiKey = config.imageApiKey;
-      if (!apiKey) { addSystemMessage('⚠️ Укажите API-ключ для генерации изображений.'); return null; }
+      const width = 1024;
+      const height = 1024;
+      const model = 'flux'; // или 'diffusion', 'stable-diffusion', 'turbo'
+      const seed = Math.floor(Math.random() * 1000000);
+      const nologo = true;
+
+      const baseUrl = 'https://image.pollinations.ai/prompt';
+      const encodedPrompt = encodeURIComponent(prompt);
+      const url = `${baseUrl}/${encodedPrompt}?width=${width}&height=${height}&model=${model}&seed=${seed}&nologo=${nologo}`;
+
       try {
-        const resp = await fetch('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inputs: prompt })
-        });
-        if (!resp.ok) throw new Error(`API error: ${resp.status}`);
-        const blob = await resp.blob();
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Pollinations API error: ${response.status}`);
+        const blob = await response.blob();
         return URL.createObjectURL(blob);
-      } catch(e) { addSystemMessage(`❌ Ошибка генерации: ${e.message}`); return null; }
+      } catch (error) {
+        console.error('Pollinations generation error:', error);
+        addSystemMessage(`❌ Ошибка генерации: ${error.message}`);
+        return null;
+      }
     }
 
     async function getWeather(city) { return `Погода в ${city}: +22°C, ясно. (заглушка)`; }
@@ -1754,7 +1759,7 @@
       } catch (error) { addSystemMessage(`❌ Ошибка: ${error.message}`); }
     }
 
-    // ---------- Генерация изображений ----------
+    // ---------- Генерация изображений (через Pollinations.ai) ----------
     generateImageBtn.addEventListener('click', function() {
       const prompt = prompt('🎨 Введите описание изображения:');
       if (!prompt || prompt.trim() === '') return;
@@ -1816,7 +1821,6 @@
       pluginCalendar.checked = config.pluginCalendar || false;
       pluginNews.checked = config.pluginNews || false;
       gitRepoUrl.value = config.gitRepoUrl || '';
-      imageApiKey.value = config.imageApiKey || '';
       updateModelOptions();
       modelSelect.value = config.model || '';
       populateVoiceList();
