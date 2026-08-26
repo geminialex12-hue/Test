@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jarvis 3.4 · ИИ-ассистент</title>
+  <title>Jarvis 3.4 · Голосовой звонок</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <style>
-    /* ——— Все стили (сокращённо, но рабочие) ——— */
+    /* ——— ОСНОВНЫЕ СТИЛИ (ТЕ ЖЕ) ——— */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #080b12; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; color: #e4e9f2; }
     .app { display: flex; height: 100vh; width: 100%; background: rgba(8,11,18,0.95); }
@@ -145,6 +145,172 @@
     .call-btn:hover { background: rgba(74,106,255,0.3); border-color: #4a6aff; }
     .call-btn.active { background: #4a6aff; color: white; box-shadow: 0 0 30px rgba(74,106,255,0.4); animation: pulse-call 1.5s infinite; }
     @keyframes pulse-call { 0% { box-shadow: 0 0 0 0 rgba(74,106,255,0.5); } 50% { box-shadow: 0 0 0 20px rgba(74,106,255,0); } 100% { box-shadow: 0 0 0 0 rgba(74,106,255,0); } }
+
+    /* ========== ИНТЕРФЕЙС ЗВОНКА ========== */
+    .call-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 11, 18, 0.92);
+      backdrop-filter: blur(30px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      flex-direction: column;
+      animation: fadeIn 0.4s ease;
+    }
+    .call-overlay.active { display: flex; }
+    @keyframes fadeIn { from { opacity:0; transform:scale(0.96); } to { opacity:1; transform:scale(1); } }
+
+    .call-container {
+      width: 100%;
+      max-width: 480px;
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+
+    /* Заголовок */
+    .call-header { text-align: center; }
+    .call-header .call-title { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #7a97ff, #4a6aff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .call-header .call-status { font-size: 14px; color: #6a7ba8; margin-top: 4px; }
+
+    /* Аватар с пульсирующими волнами (как басы) */
+    .call-avatar-wrap {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .call-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #7a97ff, #1f3a9f);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: 0 8px 32px rgba(56,98,255,0.3);
+      z-index: 2;
+      transition: box-shadow 0.3s;
+    }
+    /* Волны (басы) – пульсируют во время речи Джарвиса */
+    .call-wave {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid rgba(74, 106, 255, 0.15);
+      animation: wavePulse 2s ease-out infinite;
+      opacity: 0;
+    }
+    .call-wave:nth-child(1) { width: 120px; height: 120px; animation-delay: 0s; }
+    .call-wave:nth-child(2) { width: 150px; height: 150px; animation-delay: 0.4s; }
+    .call-wave:nth-child(3) { width: 180px; height: 180px; animation-delay: 0.8s; }
+    .call-wave:nth-child(4) { width: 210px; height: 210px; animation-delay: 1.2s; }
+
+    @keyframes wavePulse {
+      0% { transform: scale(0.8); opacity: 0.6; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+    /* Активная анимация (когда Джарвис говорит) */
+    .call-avatar-wrap.speaking .call-wave {
+      animation-duration: 1.2s;
+      border-color: rgba(74, 106, 255, 0.4);
+    }
+    .call-avatar-wrap.speaking .call-avatar {
+      box-shadow: 0 0 60px rgba(74, 106, 255, 0.6);
+    }
+
+    /* Текст ответа */
+    .call-response {
+      background: rgba(255,255,255,0.04);
+      border-radius: 20px;
+      padding: 16px 20px;
+      width: 100%;
+      min-height: 80px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #e4e9f2;
+      border: 1px solid rgba(255,255,255,0.04);
+      text-align: center;
+    }
+    .call-response .typing-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.1em;
+      background: #8aa3ff;
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 0.8s step-end infinite;
+    }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+
+    /* Кнопки управления */
+    .call-controls {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .call-controls button {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 40px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 120px;
+      justify-content: center;
+    }
+    .call-controls .btn-stop {
+      background: rgba(255,70,70,0.15);
+      color: #ff6b6b;
+      border: 1px solid rgba(255,70,70,0.2);
+    }
+    .call-controls .btn-stop:hover { background: rgba(255,70,70,0.25); }
+    .call-controls .btn-reset {
+      background: rgba(255,255,255,0.04);
+      color: #b0c4ff;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .call-controls .btn-reset:hover { background: rgba(255,255,255,0.08); }
+    .call-controls .btn-close-call {
+      background: rgba(255,255,255,0.04);
+      color: #6a7ba8;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .call-controls .btn-close-call:hover { background: rgba(255,255,255,0.08); }
+
+    /* Микрофон активен */
+    .call-mic-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #6bff6b;
+    }
+    .call-mic-indicator .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #6bff6b;
+      animation: pulse-dot 1.2s infinite;
+    }
+    @keyframes pulse-dot { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.8); } }
+
   </style>
 </head>
 <body>
@@ -258,7 +424,7 @@
   </div>
 </div>
 
-<!-- Admin Panel (упрощённо) -->
+<!-- Admin Panel -->
 <div class="modal-overlay" id="adminPanel">
   <div class="modal">
     <h2>🔧 Админ-панель</h2>
@@ -270,11 +436,49 @@
   </div>
 </div>
 
+<!-- ========== ИНТЕРФЕЙС ЗВОНКА ========== -->
+<div class="call-overlay" id="callOverlay">
+  <div class="call-container">
+    <!-- Заголовок -->
+    <div class="call-header">
+      <div class="call-title">📞 Джарвис</div>
+      <div class="call-status" id="callStatus">Готов к разговору...</div>
+    </div>
+
+    <!-- Аватар с волнами -->
+    <div class="call-avatar-wrap" id="callAvatarWrap">
+      <div class="call-wave"></div>
+      <div class="call-wave"></div>
+      <div class="call-wave"></div>
+      <div class="call-wave"></div>
+      <div class="call-avatar">J</div>
+    </div>
+
+    <!-- Индикатор микрофона -->
+    <div class="call-mic-indicator" id="callMicIndicator">
+      <span class="dot"></span>
+      <span>Микрофон активен</span>
+    </div>
+
+    <!-- Текст ответа -->
+    <div class="call-response" id="callResponse">
+      Нажмите «Говорить» и задайте вопрос, сер.
+    </div>
+
+    <!-- Кнопки управления -->
+    <div class="call-controls">
+      <button class="btn-stop" id="callStopBtn">⏹ Стоп</button>
+      <button class="btn-reset" id="callResetBtn">🔄 Сбросить</button>
+      <button class="btn-close-call" id="callCloseBtn">✕ Закрыть</button>
+    </div>
+  </div>
+</div>
+
 <script>
   (function() {
     'use strict';
 
-    // ---------- API-КЛЮЧИ (вставлены) ----------
+    // ---------- API-КЛЮЧИ ----------
     const GROQ_API_KEY = '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';
     const ENCRYPTED_OPENROUTER_KEY = 'c2stb3ItdjEtZTM0NTk1NWY1NGM2NTg1ZTA2OTBhMTkwNmE2ZmYyMzJmNjMxOWQyZGEwYjFmMjkzZjEyZWNmODMzMjFlZjYxMg==';
     function getOpenRouterKey() { try { return atob(ENCRYPTED_OPENROUTER_KEY); } catch(e) { return ''; } }
@@ -337,6 +541,16 @@
     const confirmBtn = document.getElementById('confirmBtn');
     const authMessage = document.getElementById('authMessage');
 
+    // ---------- Элементы звонка ----------
+    const callOverlay = document.getElementById('callOverlay');
+    const callStatus = document.getElementById('callStatus');
+    const callAvatarWrap = document.getElementById('callAvatarWrap');
+    const callResponse = document.getElementById('callResponse');
+    const callMicIndicator = document.getElementById('callMicIndicator');
+    const callStopBtn = document.getElementById('callStopBtn');
+    const callResetBtn = document.getElementById('callResetBtn');
+    const callCloseBtn = document.getElementById('callCloseBtn');
+
     // ---------- Состояние ----------
     let isGenerating = false;
     let abortController = null;
@@ -349,6 +563,11 @@
     let lastTopic = '';
     let stats = { users: {} };
     let savedPlugins = [];
+
+    // Состояние звонка
+    let isCallActive = false;
+    let callRecognition = null;
+    let isSpeaking = false;
 
     // ---------- Конфиг ----------
     const config = {
@@ -484,7 +703,7 @@
       document.querySelector('.new-chat-btn').textContent = lang === 'ru' ? '➕ Новый' : lang === 'en' ? '➕ New' : '➕ Nuevo';
     }
 
-    // ---------- СИСТЕМНЫЙ ПРОМПТ С "СЕР" ----------
+    // ---------- СИСТЕМНЫЙ ПРОМПТ ----------
     function updateSystemPrompt() {
       let base = `Ты — Джарвис, созданный NODE / хелок. Всегда обращайся к пользователю на "Вы" и добавляй в конце каждого ответа слово "сер". Отвечай развёрнуто, структурированно. Используй маркдаун.\n\n`;
       base += `Если пользователь задаёт новый вопрос, не связанный с предыдущим, не используй предыдущие ответы.\n\n`;
@@ -554,7 +773,7 @@
     }
     setTimeout(populateVoiceList, 500);
 
-    // ---------- Speech Recognition (микрофон) ----------
+    // ---------- Speech Recognition (микрофон в чате) ----------
     let recognition = null;
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -593,8 +812,8 @@
       } catch(e) { micBtn.classList.remove('mic-active'); }
     });
 
-    // ---------- Speech Synthesis (голос) ----------
-    function speakText(text) {
+    // ---------- Speech Synthesis ----------
+    function speakText(text, callback) {
       if (!('speechSynthesis' in window)) return;
       if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -611,23 +830,53 @@
         const ruVoice = voices.find(v => v.lang.startsWith('ru'));
         if (ruVoice) utterance.voice = ruVoice;
       }
-      utterance.onstart = () => document.querySelector('.avatar')?.classList.add('pulse');
-      utterance.onend = () => document.querySelector('.avatar')?.classList.remove('pulse');
-      utterance.onerror = () => document.querySelector('.avatar')?.classList.remove('pulse');
+      // Активируем анимацию волн
+      utterance.onstart = () => {
+        isSpeaking = true;
+        callAvatarWrap.classList.add('speaking');
+      };
+      utterance.onend = () => {
+        isSpeaking = false;
+        callAvatarWrap.classList.remove('speaking');
+        if (callback) callback();
+      };
+      utterance.onerror = () => {
+        isSpeaking = false;
+        callAvatarWrap.classList.remove('speaking');
+        if (callback) callback();
+      };
       window.speechSynthesis.speak(utterance);
     }
 
-    // ---------- ЗВОНОК ----------
-    let isCallActive = false;
-    let callRecognition = null;
-    let callTimeout = null;
+    // ---------- ИНТЕРФЕЙС ЗВОНКА ----------
+    function openCallUI() {
+      callOverlay.classList.add('active');
+      callStatus.textContent = 'Готов к разговору...';
+      callResponse.textContent = 'Нажмите «Говорить» и задайте вопрос, сер.';
+      callAvatarWrap.classList.remove('speaking');
+      callMicIndicator.style.display = 'flex';
+      // Автоматически начинаем прослушивание
+      startCallListening();
+    }
 
-    function startCall() {
+    function closeCallUI() {
+      callOverlay.classList.remove('active');
+      stopCallListening();
+      // Останавливаем синтез речи
+      if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+      callAvatarWrap.classList.remove('speaking');
+      isSpeaking = false;
+    }
+
+    // Запуск прослушивания
+    function startCallListening() {
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        addSystemMessage('⚠️ Голосовой звонок не поддерживается в этом браузере.');
+        callStatus.textContent = '❌ Браузер не поддерживает голосовой ввод.';
         return;
       }
-      if (isCallActive) return;
+      if (callRecognition) {
+        try { callRecognition.stop(); } catch(e) {}
+      }
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       callRecognition = new SR();
       callRecognition.lang = 'ru-RU';
@@ -636,52 +885,128 @@
       callRecognition.onresult = async function(e) {
         const transcript = e.results[e.results.length-1][0].transcript.trim();
         if (transcript) {
-          addMessage('user', transcript, false);
-          showThinking();
+          // Отображаем текст пользователя
+          callResponse.textContent = `🗣 Вы: ${transcript}`;
+          callStatus.textContent = 'Джарвис думает...';
+          // Получаем ответ
           const answer = await getAIResponse(transcript);
-          hideThinking();
           if (answer) {
             let finalText = answer;
             if (!finalText.toLowerCase().includes('сер')) finalText += ', сер.';
-            addMessage('jarvis', finalText, false);
+            // Отображаем ответ с эффектом печати
+            callResponse.textContent = '';
+            typeText(callResponse, finalText, 20);
+            // Озвучиваем
             speakText(finalText);
+            callStatus.textContent = 'Джарвис говорит...';
+          } else {
+            callResponse.textContent = '❌ Не удалось получить ответ.';
+            callStatus.textContent = 'Ошибка';
           }
         }
       };
       callRecognition.onerror = function(e) {
-        if (e.error === 'not-allowed') addSystemMessage('⚠️ Разрешите доступ к микрофону.');
+        if (e.error === 'not-allowed') {
+          callStatus.textContent = '❌ Доступ к микрофону запрещён.';
+        } else if (e.error === 'no-speech') {
+          // Игнорируем
+        } else {
+          console.warn('Call recognition error:', e.error);
+        }
       };
       callRecognition.onend = function() {
-        if (isCallActive) { try { callRecognition.start(); } catch(e) {} }
+        if (isCallActive) {
+          // Перезапускаем, если звонок ещё активен
+          try { callRecognition.start(); } catch(e) {}
+        }
       };
       try {
         callRecognition.start();
         isCallActive = true;
         callBtn.classList.add('active');
-        addSystemMessage('📞 Звонок активен. Говорите...');
-        callTimeout = setInterval(() => {
-          if (isCallActive && callRecognition && !callRecognition.recognizing) {
-            try { callRecognition.start(); } catch(e) {}
-          }
-        }, 5000);
+        callStatus.textContent = '🎙 Слушаю...';
+        callMicIndicator.style.display = 'flex';
       } catch(e) {
-        addSystemMessage('❌ Не удалось начать звонок.');
+        callStatus.textContent = '❌ Ошибка запуска микрофона.';
       }
     }
 
-    function stopCall() {
+    function stopCallListening() {
       isCallActive = false;
-      if (callRecognition) { try { callRecognition.stop(); } catch(e) {} callRecognition = null; }
-      if (callTimeout) { clearInterval(callTimeout); callTimeout = null; }
+      if (callRecognition) {
+        try { callRecognition.stop(); } catch(e) {}
+        callRecognition = null;
+      }
       callBtn.classList.remove('active');
-      addSystemMessage('📞 Звонок завершён.');
+      callMicIndicator.style.display = 'none';
+      callStatus.textContent = 'Звонок завершён.';
     }
 
-    callBtn.addEventListener('click', function() {
-      if (isCallActive) stopCall();
-      else startCall();
+    // Эффект печати для звонка
+    function typeText(element, text, speed = 20) {
+      let index = 0;
+      element.textContent = '';
+      const cursor = document.createElement('span');
+      cursor.className = 'typing-cursor';
+      element.appendChild(cursor);
+      function typeChar() {
+        if (index < text.length) {
+          const char = text.charAt(index);
+          const textNode = document.createTextNode(char);
+          element.insertBefore(textNode, cursor);
+          index++;
+          setTimeout(typeChar, speed);
+        } else {
+          if (cursor.parentNode) cursor.remove();
+        }
+      }
+      typeChar();
+    }
+
+    // Сброс звонка
+    function resetCall() {
+      stopCallListening();
+      callResponse.textContent = 'Нажмите «Говорить» и задайте вопрос, сер.';
+      callStatus.textContent = 'Готов к разговору...';
+      callAvatarWrap.classList.remove('speaking');
+      if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+      isSpeaking = false;
+      // Перезапускаем прослушивание
+      startCallListening();
+    }
+
+    // Кнопки управления звонком
+    callStopBtn.addEventListener('click', function() {
+      if (isCallActive) {
+        stopCallListening();
+        callStatus.textContent = '⏹ Прослушивание остановлено.';
+        callResponse.textContent = 'Нажмите «Сбросить», чтобы продолжить.';
+      }
     });
 
+    callResetBtn.addEventListener('click', resetCall);
+
+    callCloseBtn.addEventListener('click', function() {
+      closeCallUI();
+    });
+
+    // Кнопка звонка в шапке
+    callBtn.addEventListener('click', function() {
+      if (callOverlay.classList.contains('active')) {
+        closeCallUI();
+      } else {
+        openCallUI();
+      }
+    });
+
+    // Закрытие по клику вне (для удобства)
+    callOverlay.addEventListener('click', function(e) {
+      if (e.target === callOverlay) {
+        closeCallUI();
+      }
+    });
+
+    // ---------- Получение ответа от AI (для звонка и чата) ----------
     async function getAIResponse(userText) {
       updateSystemPrompt();
       const messages = [];
@@ -696,7 +1021,7 @@
       }
     }
 
-    // ---------- Остальные функции (интерфейс) ----------
+    // ---------- Остальные функции (интерфейс чата) ----------
     function loadChats() {
       try {
         const saved = localStorage.getItem('jarvis_chats');
@@ -888,13 +1213,12 @@
       return div.innerHTML;
     }
 
-    // ---------- ГЛАВНАЯ ФУНКЦИЯ callAI (с fallback) ----------
+    // ---------- callAI (с fallback) ----------
     async function callAI(messages) {
       const provider = config.provider;
       const model = config.model;
       const temperature = config.temperature || 0.7;
 
-      // Пробуем сначала выбранного провайдера, если ошибка – пробуем другого
       const providers = [provider, provider === 'groq' ? 'openrouter' : 'groq'];
       let lastError = null;
 
@@ -948,17 +1272,15 @@
         } catch (e) {
           lastError = e;
           console.warn(`Провайдер ${p} не сработал:`, e.message);
-          // Если это второй провайдер и он тоже упал – выбросим ошибку позже
           if (p === providers[providers.length - 1]) {
             throw new Error(`Все провайдеры не отвечают. Последняя ошибка: ${e.message}`);
           }
-          // Иначе пробуем следующий
         }
       }
       throw new Error('Неизвестная ошибка при вызове AI.');
     }
 
-    // ---------- Обработка отправки ----------
+    // ---------- Обработка отправки в чате ----------
     async function handleSend(text, speak = false) {
       const trimmed = text.trim();
       if (!trimmed && !pendingImage) {
@@ -1025,7 +1347,6 @@
         addMessage('user', imgHtml, true);
         pendingImage = null;
         attachBtn.classList.remove('has-attachment');
-        // Отправляем мультимодальный запрос (упрощённо – только текст)
         await sendMultimodalRequest(userText, imageData, speak);
         return;
       }
@@ -1105,7 +1426,6 @@
     }
 
     async function sendMultimodalRequest(text, imageBase64, speak) {
-      // Для простоты используем только текст
       const answer = await getAIResponse(text);
       if (answer) {
         let finalText = answer;
@@ -1238,7 +1558,7 @@
       }
     });
 
-    // Авторизация (упрощённо)
+    // Авторизация
     let generatedCode = '';
     async function sendVerificationCode(email) {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
