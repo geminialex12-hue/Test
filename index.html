@@ -1,431 +1,492 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jarvis 3.4 · Голосовой помощник</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Jarvis · Голосовой помощник</title>
   <style>
-    /* ——— Глобальные стили ——— */
+    /* ---------- RESET & GLOBAL ---------- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: #080b12;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0c14;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
       height: 100vh;
       overflow: hidden;
-      color: #e4e9f2;
+      color: #e8edf5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
     }
-    .app { display: flex; height: 100vh; width: 100%; background: rgba(8,11,18,0.95); }
-    .sidebar {
-      width: 260px;
-      background: rgba(14,18,32,0.92);
-      backdrop-filter: blur(16px);
-      border-right: 1px solid rgba(255,255,255,0.04);
+    .app {
+      width: 100%;
+      max-width: 420px;
+      height: 100vh;
+      max-height: 820px;
+      background: linear-gradient(145deg, #10141e, #0b0e16);
+      border-radius: 44px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.03);
       display: flex;
       flex-direction: column;
-      flex-shrink: 0;
       overflow: hidden;
-      z-index: 10;
-    }
-    .sidebar-header { padding: 16px 18px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; }
-    .sidebar-header .logo { font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #7a97ff, #1f3a9f); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .new-chat-btn { background: rgba(74,106,255,0.15); border: 1px solid rgba(74,106,255,0.2); color: #b0c4ff; padding: 8px 14px; border-radius: 40px; cursor: pointer; font-weight: 500; transition: 0.2s; }
-    .new-chat-btn:hover { background: rgba(74,106,255,0.25); border-color: #4a6aff; }
-    .chat-list { flex: 1; overflow-y: auto; padding: 8px 12px; }
-    .chat-item { padding: 10px 14px; border-radius: 12px; cursor: pointer; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; transition: 0.2s; }
-    .chat-item:hover { background: rgba(255,255,255,0.04); }
-    .chat-item.active { background: rgba(74,106,255,0.12); border-left: 2px solid #4a6aff; }
-    .chat-item .chat-name { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .chat-item .chat-actions { display: flex; gap: 4px; opacity: 0; transition: 0.2s; }
-    .chat-item:hover .chat-actions { opacity: 1; }
-    .chat-item .chat-actions button { background: transparent; border: none; color: #6a7ba8; cursor: pointer; padding: 2px 6px; border-radius: 6px; font-size: 13px; transition: 0.2s; }
-    .chat-item .chat-actions button:hover { color: #ff6b6b; background: rgba(255,70,70,0.08); }
-    .sidebar-footer { padding: 16px 18px; border-top: 1px solid rgba(255,255,255,0.04); }
-    .user-info { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 4px 0; border-radius: 8px; transition: 0.2s; }
-    .user-info:hover { background: rgba(255,255,255,0.04); }
-    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #7a97ff, #1f3a9f); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; color: #fff; flex-shrink: 0; }
-    .user-details { flex: 1; min-width: 0; }
-    .user-details .user-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .user-details .user-email { font-size: 12px; color: #6a7ba8; }
-    .main { flex: 1; display: flex; flex-direction: column; background: rgba(8,11,18,0.7); backdrop-filter: blur(20px); min-width: 0; }
-    .main-header { padding: 14px 24px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid rgba(255,255,255,0.04); flex-shrink: 0; background: rgba(0,0,0,0.15); }
-    .menu-toggle { background: transparent; border: none; color: #b0c4ff; font-size: 22px; cursor: pointer; display: none; padding: 4px; }
-    .main-header .chat-title { font-size: 18px; font-weight: 600; flex: 1; }
-    .main-header .chat-title input { background: transparent; border: none; color: #eef3ff; font-size: 18px; font-weight: 600; outline: none; width: 100%; font-family: inherit; }
-    .main-header .chat-title input::placeholder { color: #6a7ba8; }
-    .main-actions { display: flex; gap: 4px; align-items: center; }
-    .main-actions button { background: rgba(255,255,255,0.04); border: none; color: #b0c4ff; width: 36px; height: 36px; border-radius: 50%; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-    .main-actions button:hover { background: rgba(255,255,255,0.08); }
-    .call-btn { background: rgba(74,106,255,0.2); border: 1px solid rgba(74,106,255,0.3); border-radius: 50%; width: 42px; height: 42px; font-size: 20px; color: #b0c4ff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-    .call-btn:hover { background: rgba(74,106,255,0.3); border-color: #4a6aff; }
-    .call-btn.active { background: #4a6aff; color: white; box-shadow: 0 0 30px rgba(74,106,255,0.4); animation: pulse-call 1.5s infinite; }
-    @keyframes pulse-call { 0% { box-shadow: 0 0 0 0 rgba(74,106,255,0.5); } 50% { box-shadow: 0 0 0 20px rgba(74,106,255,0); } 100% { box-shadow: 0 0 0 0 rgba(74,106,255,0); } }
-    .chat-box { flex: 1; overflow-y: auto; padding: 20px 24px 12px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
-    .chat-box::-webkit-scrollbar { width: 4px; }
-    .chat-box::-webkit-scrollbar-thumb { background: #3c4f8a; border-radius: 8px; }
-    .message { display: flex; flex-direction: column; max-width: 92%; animation: slideUp 0.3s ease forwards; opacity: 0; transform: translateY(12px); }
-    @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
-    .message.user { align-self: flex-end; align-items: flex-end; }
-    .message.jarvis { align-self: flex-start; align-items: flex-start; }
-    .message.system { align-self: center; max-width: 80%; font-size: 13px; color: #8e9fd3; }
-    .message.system .bubble { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.03); border-radius: 40px; padding: 6px 16px; }
-    .bubble { padding: 10px 18px; border-radius: 22px; font-size: 15px; line-height: 1.6; word-break: break-word; background: rgba(40,46,74,0.7); border: 1px solid rgba(255,255,255,0.04); box-shadow: 0 2px 12px rgba(0,0,0,0.2); position: relative; max-width: 100%; }
-    .message.user .bubble { background: linear-gradient(135deg, #4a6aff, #2f47c7); border-color: rgba(255,255,255,0.08); color: white; border-bottom-right-radius: 6px; }
-    .message.jarvis .bubble { background: rgba(30,36,60,0.8); backdrop-filter: blur(4px); border-bottom-left-radius: 6px; border-left: 2px solid #4a6aff; }
-    .bubble p { margin: 4px 0; }
-    .bubble ul, .bubble ol { padding-left: 20px; margin: 6px 0; }
-    .bubble blockquote { border-left: 3px solid #4a6aff; padding-left: 14px; margin: 8px 0; color: #b8c7ff; }
-    .bubble pre { position: relative; background: #0d1117; border-radius: 14px; padding: 16px 18px; margin: 8px 0; overflow-x: auto; font-size: 13px; border: 1px solid rgba(255,255,255,0.06); }
-    .bubble pre code { font-family: 'JetBrains Mono', monospace; font-size: 13px; display: block; white-space: pre; }
-    .bubble pre .line-numbers { float: left; margin-right: 12px; color: #6a7ba8; user-select: none; text-align: right; padding-right: 6px; border-right: 1px solid #2a3150; }
-    .code-toolbar { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s; }
-    .bubble pre:hover .code-toolbar { opacity: 1; }
-    .code-toolbar button { background: rgba(255,255,255,0.08); border: none; color: #b0c4ff; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: 0.2s; }
-    .code-toolbar button:hover { background: rgba(255,255,255,0.18); }
-    .source-block { margin-top: 8px; padding: 8px 14px; background: rgba(255,255,255,0.04); border-radius: 12px; border-left: 2px solid #4a6aff; font-size: 13px; color: #96a7d9; }
-    .source-block a { color: #7a97ff; text-decoration: none; }
-    .source-block a:hover { text-decoration: underline; }
-    .thinking-dots { display: flex; gap: 6px; align-items: center; padding: 6px 0; }
-    .thinking-dots span { width: 8px; height: 8px; background: #8aa3ff; border-radius: 50%; animation: dotBounce 1.4s infinite; }
-    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes dotBounce { 0%,60%,100% { transform: translateY(0); opacity:0.4; } 30% { transform: translateY(-10px); opacity:1; } }
-    .input-area { padding: 14px 24px 22px; display: flex; flex-direction: column; gap: 10px; background: rgba(8,11,20,0.6); border-top: 1px solid rgba(255,255,255,0.04); flex-shrink: 0; }
-    .input-row { display: flex; gap: 12px; align-items: center; }
-    .input-wrapper { flex: 1; display: flex; align-items: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 40px; padding: 0 8px 0 18px; transition: border 0.25s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
-    .input-wrapper:focus-within { border-color: #4a6aff; box-shadow: 0 0 0 3px rgba(74,106,255,0.15), inset 0 2px 4px rgba(0,0,0,0.2); }
-    .input-wrapper input { flex: 1; background: transparent; border: none; padding: 12px 0; color: #eef3ff; font-size: 15px; outline: none; font-family: inherit; }
-    .input-wrapper input::placeholder { color: #6a7ba8; }
-    .input-wrapper .tool-btn { background: transparent; border: none; color: #b0c4ff; width: 40px; height: 40px; border-radius: 50%; font-size: 19px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-    .input-wrapper .tool-btn:hover { background: rgba(255,255,255,0.05); }
-    .input-wrapper .tool-btn.mic-active { color: #ff6b8a; background: rgba(255,80,120,0.15); }
-    .input-wrapper .tool-btn.has-attachment { color: #6bff6b; }
-    .send-btn { background: linear-gradient(135deg, #4a6aff, #2f47c7); border: none; color: white; width: 48px; height: 48px; border-radius: 50%; font-size: 22px; cursor: pointer; box-shadow: 0 6px 20px rgba(56,98,255,0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.2s; }
-    .send-btn:hover { box-shadow: 0 8px 30px rgba(56,98,255,0.5); }
-    .stop-btn { background: rgba(255,70,70,0.12); border: none; color: #ff6b6b; width: 48px; height: 48px; border-radius: 50%; font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; transition: 0.2s; }
-    .stop-btn:hover { background: rgba(255,70,70,0.2); }
-    .file-input-hidden { display: none; }
-    .modal-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 999; }
-    .modal-overlay.active { display: flex; }
-    .modal { background: #1a2035; border-radius: 32px; padding: 28px 24px; max-width: 620px; width: 90%; box-shadow: 0 40px 80px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.06); max-height: 90vh; overflow-y: auto; }
-    .modal h2 { font-size: 22px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
-    .modal label { display: block; font-size: 13px; color: #96a7d9; margin-top: 12px; margin-bottom: 4px; }
-    .modal select, .modal input, .modal .range-wrap, .modal textarea { width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #eef3ff; font-size: 14px; outline: none; font-family: inherit; }
-    .modal textarea { min-height: 100px; resize: vertical; }
-    .modal select option { background: #1a2035; }
-    .modal .range-wrap { display: flex; align-items: center; gap: 12px; padding: 4px 12px; }
-    .modal .range-wrap input[type="range"] { flex: 1; background: transparent; accent-color: #4a6aff; }
-    .modal .range-wrap span { min-width: 32px; text-align: center; color: #b0c4ff; }
-    .modal .checkbox-group { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
-    .modal .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: #4a6aff; cursor: pointer; }
-    .modal .checkbox-group label { margin: 0; cursor: pointer; font-size: 14px; }
-    .modal .modal-actions { display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end; }
-    .modal .modal-actions button { padding: 8px 20px; border: none; border-radius: 30px; font-weight: 500; cursor: pointer; transition: 0.2s; }
-    .modal .modal-actions .btn-primary { background: #4a6aff; color: white; }
-    .modal .modal-actions .btn-primary:hover { background: #5a7aff; }
-    .modal .modal-actions .btn-secondary { background: rgba(255,255,255,0.06); color: #b0c4ff; }
-    .modal .modal-actions .btn-secondary:hover { background: rgba(255,255,255,0.1); }
-    #adminPanel .modal { max-width: 720px; }
-    #adminPanel .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 12px; margin: 12px 0; }
-    #adminPanel .stat-card { background: rgba(255,255,255,0.04); border-radius: 14px; padding: 12px; text-align: center; }
-    #adminPanel .stat-card .num { font-size: 24px; font-weight: 700; color: #7a97ff; }
-    #adminPanel .stat-card .label { font-size: 12px; color: #96a7d9; margin-top: 2px; }
-    #adminPanel .user-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
-    #adminPanel .user-table th, #adminPanel .user-table td { padding: 6px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    #adminPanel .user-table th { color: #96a7d9; font-weight: 500; }
-    #adminPanel .admin-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-    #adminPanel .admin-actions button { padding: 6px 16px; border: none; border-radius: 30px; background: rgba(74,106,255,0.15); color: #b0c4ff; cursor: pointer; transition: 0.2s; }
-    #adminPanel .admin-actions button:hover { background: rgba(74,106,255,0.25); }
-    #adminPanel .admin-actions .danger { background: rgba(255,70,70,0.12); color: #ff6b6b; }
-    #adminPanel .admin-actions .danger:hover { background: rgba(255,70,70,0.2); }
-    .auth-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.75); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-    .auth-overlay.hidden { display: none; }
-    .auth-box { background: #1a2035; border-radius: 40px; padding: 32px 28px; max-width: 400px; width: 90%; box-shadow: 0 40px 80px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.06); text-align: center; }
-    .auth-box h2 { font-size: 22px; margin-bottom: 6px; }
-    .auth-box p { color: #96a7d9; font-size: 14px; margin-bottom: 20px; }
-    .auth-box input { width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 30px; color: #eef3ff; font-size: 15px; outline: none; font-family: inherit; margin-bottom: 10px; }
-    .auth-box input:focus { border-color: #4a6aff; }
-    .auth-box .auth-row { display: flex; gap: 10px; margin-bottom: 10px; }
-    .auth-box .auth-row input { flex: 1; margin-bottom: 0; }
-    .auth-box .auth-row button { padding: 10px 18px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 30px; color: #b0c4ff; cursor: pointer; transition: 0.2s; font-size: 14px; }
-    .auth-box .auth-row button:hover { background: rgba(255,255,255,0.1); }
-    .auth-box .btn-confirm { width: 100%; padding: 12px; background: linear-gradient(135deg, #4a6aff, #2f47c7); border: none; border-radius: 30px; color: white; font-size: 16px; font-weight: 500; cursor: pointer; margin-top: 6px; transition: 0.2s; }
-    .auth-box .btn-confirm:hover { background: linear-gradient(135deg, #5a7aff, #3a57d7); }
-    .auth-box .error-msg { color: #ff6b6b; font-size: 13px; margin-top: 8px; min-height: 20px; }
-    @media (max-width: 768px) {
-      .sidebar { position: fixed; left:0; top:0; height:100%; width:280px; transform:translateX(-100%); transition:0.3s; z-index:20; }
-      .sidebar.open { transform:translateX(0); }
-      .menu-toggle { display: flex; }
-      .main-header .chat-title { font-size:16px; }
-      .main-header { padding:10px 16px; }
-      .chat-box { padding:14px; }
-      .input-area { padding:10px 16px 16px; }
-      .input-row { flex-wrap: wrap; }
-      .input-wrapper { flex:1 1 100%; }
-    }
-    .sidebar-overlay { display: none; position: fixed; inset:0; background: rgba(0,0,0,0.4); z-index:15; }
-    .sidebar-overlay.active { display: block; }
-
-    /* ---------- ИНТЕРФЕЙС ЗВОНКА ---------- */
-    .call-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(8, 11, 18, 0.92);
-      backdrop-filter: blur(24px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1001;
-      flex-direction: column;
-      animation: fadeInCall 0.4s ease;
-    }
-    .call-overlay.active { display: flex; }
-    @keyframes fadeInCall {
-      from { opacity:0; transform:scale(0.96); }
-      to { opacity:1; transform:scale(1); }
-    }
-    .call-container {
-      text-align: center;
-      max-width: 500px;
-      width: 90%;
-    }
-    .call-avatar {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, #7a97ff, #1f3a9f);
-      margin: 0 auto 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 48px;
-      font-weight: 700;
-      color: #fff;
-      box-shadow: 0 0 60px rgba(56,98,255,0.3);
       position: relative;
-      transition: box-shadow 0.3s;
+      padding: 20px 24px 28px;
+      transition: opacity 0.3s;
     }
-    .call-avatar .pulse-ring {
-      position: absolute;
-      inset: -8px;
-      border-radius: 50%;
-      border: 2px solid rgba(74,106,255,0.3);
-      animation: ringPulse 2s infinite;
-      pointer-events: none;
-    }
-    .call-avatar .pulse-ring:nth-child(2) { animation-delay: 0.6s; }
-    .call-avatar .pulse-ring:nth-child(3) { animation-delay: 1.2s; }
-    @keyframes ringPulse {
-      0% { transform: scale(1); opacity:0.6; }
-      100% { transform: scale(1.5); opacity:0; }
-    }
-    .call-avatar.speaking {
-      box-shadow: 0 0 80px rgba(74,106,255,0.6);
-    }
-    .call-status {
-      font-size: 18px;
-      font-weight: 500;
-      color: #b0c4ff;
-      margin-bottom: 8px;
-    }
-    .call-substatus {
-      font-size: 14px;
-      color: #6a7ba8;
-      margin-bottom: 30px;
-    }
-    .call-controls {
+
+    /* ---------- HEADER ---------- */
+    .header {
       display: flex;
-      gap: 20px;
-      justify-content: center;
-      margin-top: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      flex-shrink: 0;
     }
-    .call-controls button {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      background: linear-gradient(135deg, #8aa3ff, #4a6aff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .logo small {
+      font-size: 12px;
+      font-weight: 400;
+      -webkit-text-fill-color: #6a7ba8;
+      background: rgba(255,255,255,0.04);
+      padding: 2px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .header-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .header-actions button {
+      background: rgba(255,255,255,0.04);
       border: none;
-      font-size: 28px;
+      color: #8e9fd3;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 18px;
       cursor: pointer;
       transition: 0.2s;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255,255,255,0.04);
+    }
+    .header-actions button:hover { background: rgba(255,255,255,0.08); }
+    .header-actions button:active { transform: scale(0.92); }
+
+    /* ---------- STATUS ---------- */
+    .status-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 0 8px;
+      min-height: 160px;
+    }
+    .status-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #4a6aff, #1f3a9f);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 600;
+      color: #fff;
+      box-shadow: 0 8px 32px rgba(74, 106, 255, 0.25);
+      transition: box-shadow 0.4s, transform 0.3s;
+      position: relative;
+      margin-bottom: 16px;
+    }
+    .status-icon .pulse-ring {
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 2px solid rgba(74, 106, 255, 0.15);
+      animation: ringPulse 2s infinite;
+      pointer-events: none;
+    }
+    .status-icon .pulse-ring:nth-child(2) { animation-delay: 0.6s; }
+    .status-icon .pulse-ring:nth-child(3) { animation-delay: 1.2s; }
+    @keyframes ringPulse {
+      0% { transform: scale(1); opacity:0.6; }
+      100% { transform: scale(1.5); opacity:0; }
+    }
+    .status-icon.listening {
+      box-shadow: 0 0 0 0 rgba(74, 106, 255, 0.6);
+      animation: pulseGlow 1.5s infinite;
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 0 rgba(74,106,255,0.5); transform: scale(1); }
+      50% { box-shadow: 0 0 0 30px rgba(74,106,255,0); transform: scale(1.04); }
+      100% { box-shadow: 0 0 0 0 rgba(74,106,255,0); transform: scale(1); }
+    }
+    .status-icon.speaking {
+      box-shadow: 0 0 40px rgba(74, 106, 255, 0.4);
+    }
+    .status-icon .avatar-letter {
+      z-index: 2;
+      font-size: 32px;
+      font-weight: 600;
+    }
+    .status-label {
+      font-size: 16px;
+      font-weight: 500;
       color: #b0c4ff;
+      margin-bottom: 4px;
+      transition: 0.3s;
     }
-    .call-controls button:hover { background: rgba(255,255,255,0.08); }
-    .call-controls button:active { transform: scale(0.92); }
-    .call-controls .call-end {
-      background: rgba(255,70,70,0.15);
-      color: #ff6b6b;
+    .status-sub {
+      font-size: 13px;
+      color: #6a7ba8;
+      text-align: center;
+      max-width: 280px;
+      line-height: 1.4;
     }
-    .call-controls .call-end:hover { background: rgba(255,70,70,0.25); }
-    .call-controls .call-reset {
-      background: rgba(255,255,255,0.04);
-      color: #b0c4ff;
-    }
-    .call-controls .call-reset:hover { background: rgba(255,255,255,0.08); }
-    .call-transcript {
-      margin-top: 24px;
-      padding: 16px;
-      background: rgba(255,255,255,0.04);
-      border-radius: 16px;
-      max-height: 120px;
+
+    /* ---------- TRANSCRIPT ---------- */
+    .transcript {
+      flex: 1;
       overflow-y: auto;
-      font-size: 14px;
-      color: #96a7d9;
-      text-align: left;
+      padding: 8px 0 12px;
+      margin: 0 -4px;
+      scroll-behavior: smooth;
+      min-height: 120px;
+    }
+    .transcript::-webkit-scrollbar { width: 3px; }
+    .transcript::-webkit-scrollbar-thumb { background: #2a3150; border-radius: 8px; }
+    .transcript-item {
+      padding: 8px 12px;
+      margin-bottom: 4px;
+      border-radius: 16px;
+      font-size: 15px;
+      line-height: 1.5;
+      animation: fadeItem 0.25s ease;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    @keyframes fadeItem {
+      from { opacity:0; transform: translateY(8px); }
+      to { opacity:1; transform: translateY(0); }
+    }
+    .transcript-item.user {
+      background: rgba(74, 106, 255, 0.08);
+      border: 1px solid rgba(74, 106, 255, 0.06);
+      justify-content: flex-end;
+    }
+    .transcript-item.jarvis {
+      background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.04);
     }
-    .call-transcript::-webkit-scrollbar { width: 3px; }
-    .call-transcript::-webkit-scrollbar-thumb { background: #3c4f8a; border-radius: 8px; }
-    .call-transcript .line { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
-    .call-transcript .line.user { color: #eef3ff; }
-    .call-transcript .line.jarvis { color: #7a97ff; }
+    .transcript-item .icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center;
+    }
+    .transcript-item .text {
+      flex: 1;
+      word-break: break-word;
+    }
+    .transcript-item .time {
+      font-size: 11px;
+      color: #5a6a8a;
+      flex-shrink: 0;
+      margin-left: 8px;
+      align-self: center;
+    }
+
+    /* ---------- MIC BUTTON ---------- */
+    .mic-area {
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+    .mic-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #4a6aff, #2f47c7);
+      color: white;
+      font-size: 34px;
+      cursor: pointer;
+      transition: 0.25s;
+      box-shadow: 0 8px 32px rgba(74, 106, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .mic-btn:hover { transform: scale(1.02); }
+    .mic-btn:active { transform: scale(0.92); }
+    .mic-btn.listening {
+      background: linear-gradient(135deg, #ff6b6b, #d94a4a);
+      box-shadow: 0 8px 32px rgba(255, 70, 70, 0.3);
+      animation: micPulse 1.2s infinite;
+    }
+    @keyframes micPulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,70,70,0.4); }
+      50% { box-shadow: 0 0 0 20px rgba(255,70,70,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,70,70,0); }
+    }
+    .mic-btn .mic-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .mic-btn .mic-icon svg {
+      width: 32px;
+      height: 32px;
+      fill: currentColor;
+    }
+    .mic-btn .badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #ff6b6b;
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      border: 2px solid #0a0c14;
+    }
+
+    .mic-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .mic-actions button {
+      background: rgba(255,255,255,0.04);
+      border: none;
+      color: #6a7ba8;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mic-actions button:hover { background: rgba(255,255,255,0.08); color: #b0c4ff; }
+    .mic-actions button:active { transform: scale(0.9); }
+
+    /* ---------- MODAL SETTINGS ---------- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(20px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #141a26;
+      border-radius: 32px;
+      padding: 28px 24px;
+      max-width: 400px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255,255,255,0.04);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.8);
+    }
+    .modal h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #eef3ff;
+    }
+    .modal label {
+      display: block;
+      font-size: 13px;
+      color: #96a7d9;
+      margin-top: 14px;
+      margin-bottom: 4px;
+    }
+    .modal select, .modal input {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      color: #eef3ff;
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+    }
+    .modal select option { background: #141a26; }
+    .modal .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+    .modal .modal-actions button {
+      padding: 10px 22px;
+      border: none;
+      border-radius: 30px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .modal .modal-actions .btn-primary {
+      background: #4a6aff;
+      color: white;
+    }
+    .modal .modal-actions .btn-primary:hover { background: #5a7aff; }
+    .modal .modal-actions .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: #b0c4ff;
+    }
+    .modal .modal-actions .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 480px) {
+      body { padding: 0; }
+      .app { border-radius: 0; max-height: 100vh; padding: 16px 18px 20px; }
+      .status-icon { width: 68px; height: 68px; font-size: 30px; }
+      .mic-btn { width: 64px; height: 64px; font-size: 30px; }
+      .mic-btn .mic-icon svg { width: 28px; height: 28px; }
+      .status-label { font-size: 15px; }
+      .transcript-item { font-size: 14px; padding: 6px 10px; }
+    }
+    @media (max-width: 380px) {
+      .app { padding: 12px 14px 16px; }
+      .status-icon { width: 60px; height: 60px; font-size: 26px; }
+      .mic-btn { width: 58px; height: 58px; font-size: 26px; }
+      .mic-btn .mic-icon svg { width: 24px; height: 24px; }
+    }
+
+    /* ---------- SCROLLBAR ---------- */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2a3150; border-radius: 8px; }
+
+    /* ---------- SVG ICONS ---------- */
+    .icon-mic, .icon-send, .icon-settings, .icon-trash, .icon-close {
+      display: inline-block;
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
 <div class="app" id="app">
-  <!-- Sidebar -->
-  <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="logo">Jarvis <small>3.4</small></div>
-      <button class="new-chat-btn" id="newChatBtn">➕ Новый</button>
-    </div>
-    <div class="chat-list" id="chatList"></div>
-    <div class="sidebar-footer">
-      <div class="user-info" id="userInfo">
-        <div class="user-avatar" id="userAvatar">J</div>
-        <div class="user-details">
-          <div class="user-name" id="userNameDisplay">Пользователь</div>
-          <div class="user-email" id="userEmailDisplay">email@example.com</div>
-        </div>
-        <span style="font-size:12px; color:#6a7ba8;">▼</span>
-      </div>
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">Jarvis <small>3.4</small></div>
+    <div class="header-actions">
+      <button id="clearBtn" title="Очистить диалог" aria-label="Очистить">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      </button>
+      <button id="settingsBtn" title="Настройки" aria-label="Настройки">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      </button>
     </div>
   </div>
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-  <!-- Main -->
-  <div class="main">
-    <div class="main-header">
-      <button class="menu-toggle" id="menuToggle">☰</button>
-      <div class="chat-title"><input id="chatTitleInput" placeholder="Новый чат" spellcheck="false" /></div>
-      <div class="main-actions">
-        <button id="settingsBtn" title="Настройки">⚙️</button>
-        <button id="clearBtn" title="Очистить диалог">🗑</button>
-        <button class="call-btn" id="callBtn" title="Звонок Джарвису">📞</button>
-      </div>
+
+  <!-- Status -->
+  <div class="status-area">
+    <div class="status-icon" id="statusIcon">
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <span class="avatar-letter" id="avatarLetter">J</span>
     </div>
-    <div class="chat-box" id="chatBox"></div>
-    <div class="input-area">
-      <div class="input-row">
-        <div class="input-wrapper">
-          <input type="text" id="textInput" placeholder="Спроси что угодно…" autofocus />
-          <button class="tool-btn" id="micButton" title="Голосовой ввод">🎙️</button>
-          <button class="tool-btn" id="attachBtn" title="Прикрепить фото">📎</button>
-          <input type="file" id="fileInput" class="file-input-hidden" accept="image/*" />
-        </div>
-        <button class="stop-btn" id="stopButton">⏹</button>
-        <button class="send-btn" id="sendButton">➤</button>
-      </div>
+    <div class="status-label" id="statusLabel">Нажмите на микрофон</div>
+    <div class="status-sub" id="statusSub">Говорите, и я отвечу голосом</div>
+  </div>
+
+  <!-- Transcript -->
+  <div class="transcript" id="transcript"></div>
+
+  <!-- Mic area -->
+  <div class="mic-area">
+    <div class="mic-actions">
+      <button id="resetBtn" title="Сбросить диалог" aria-label="Сбросить">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      </button>
+    </div>
+    <button class="mic-btn" id="micBtn" aria-label="Голосовой ввод">
+      <span class="mic-icon">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16c-2.206 0-4-1.794-4-4V6c0-2.206 1.794-4 4-4s4 1.794 4 4v6c0 2.206-1.794 4-4 4zm8-4h-2c0 3.309-2.691 6-6 6s-6-2.691-6-6H4c0 4.072 3.061 7.436 7 7.931V22h2v-2.069c3.939-.495 7-3.858 7-7.931z"/></svg>
+      </span>
+    </button>
+    <div class="mic-actions">
+      <button id="settingsMicBtn" title="Настройки" aria-label="Настройки">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
     </div>
   </div>
 </div>
 
-<!-- CALL OVERLAY (интерфейс звонка) -->
-<div class="call-overlay" id="callOverlay">
-  <div class="call-container">
-    <div class="call-avatar" id="callAvatar">
-      <div class="pulse-ring"></div>
-      <div class="pulse-ring"></div>
-      <div class="pulse-ring"></div>
-      <span id="callAvatarLetter">J</span>
-    </div>
-    <div class="call-status" id="callStatus">🔴 Ожидание...</div>
-    <div class="call-substatus" id="callSubStatus">Нажмите на кнопку микрофона, чтобы говорить</div>
-    <div class="call-controls">
-      <button class="call-end" id="callEndBtn" title="Завершить звонок">📞</button>
-      <button class="call-reset" id="callResetBtn" title="Сбросить диалог">🔄</button>
-      <button class="call-mic" id="callMicToggle" title="Включить/выключить микрофон" style="background:rgba(74,106,255,0.2); color:#4a6aff;">🎙️</button>
-    </div>
-    <div class="call-transcript" id="callTranscript">
-      <div class="line system">📞 Начните разговор, нажав на микрофон.</div>
-    </div>
-  </div>
-</div>
-
-<!-- Auth overlay -->
-<div class="auth-overlay" id="authOverlay">
-  <div class="auth-box">
-    <h2>🔐 Вход в Jarvis 3.4</h2>
-    <p>Введите почту, получите код и войдите</p>
-    <div class="auth-row">
-      <input type="email" id="authEmail" placeholder="Email" />
-      <button id="sendCodeBtn">Отправить код</button>
-    </div>
-    <input type="text" id="authCode" placeholder="Введите код из письма" />
-    <button class="btn-confirm" id="confirmBtn">Подтвердить</button>
-    <div id="authMessage" class="error-msg"></div>
-  </div>
-</div>
-
-<!-- Settings modal -->
+<!-- Settings Modal -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal">
     <h2>⚙️ Настройки</h2>
     <label>Провайдер</label>
     <select id="providerSelect">
+      <option value="openai">OpenAI</option>
       <option value="groq">Groq</option>
       <option value="openrouter">OpenRouter</option>
     </select>
     <label>Модель</label>
     <select id="modelSelect"></select>
-    <label>Голос (ElevenLabs)</label>
-    <select id="voiceSelect"></select>
-    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">
-      <div><label>Тема</label><select id="themeSelect"><option value="dark">Тёмная</option><option value="light">Светлая</option></select></div>
-      <div><label>Язык</label><select id="langSelect"><option value="ru">Русский</option><option value="en">English</option><option value="es">Español</option></select></div>
+    <label>Голос (синтез)</label>
+    <select id="voiceSelect">
+      <option value="default">Системный голос</option>
+      <option value="ru-RU">Русский (стандартный)</option>
+      <option value="en-US">English (US)</option>
+    </select>
+    <label>Температура</label>
+    <div style="display:flex; align-items:center; gap:12px; padding:4px 0;">
+      <span style="color:#6a7ba8; font-size:13px;">0.0</span>
+      <input type="range" id="temperatureRange" min="0" max="200" value="70" style="flex:1; accent-color:#4a6aff; background:transparent;" />
+      <span id="tempValue" style="color:#b0c4ff; font-size:14px;">0.7</span>
     </div>
     <label>Режимы</label>
-    <div style="display:flex; flex-wrap:wrap; gap:6px;">
-      <div class="checkbox-group"><input type="checkbox" id="empathyMode" checked /><label>Эмпатия</label></div>
-      <div class="checkbox-group"><input type="checkbox" id="deepAnalysis" checked /><label>Глубокий анализ</label></div>
-      <div class="checkbox-group"><input type="checkbox" id="creativeMode" /><label>Креатив</label></div>
-      <div class="checkbox-group"><input type="checkbox" id="selfLearn" checked /><label>Самообучение</label></div>
-      <div class="checkbox-group"><input type="checkbox" id="sourceCheck" checked /><label>Источники</label></div>
-      <div class="checkbox-group"><input type="checkbox" id="showLineNumbers" checked /><label>Номера строк</label></div>
-      <div class="checkbox-group"><input type="checkbox" id="codeHelper" /><label>Код-помощник</label></div>
-      <div class="checkbox-group"><input type="checkbox" id="webSearch" /><label>Web-поиск</label></div>
-      <div class="checkbox-group"><input type="checkbox" id="voiceCommands" /><label>Голосовые команды</label></div>
+    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;">
+      <div class="checkbox-group" style="display:flex; align-items:center; gap:8px; padding:2px 0;">
+        <input type="checkbox" id="empathyMode" checked style="accent-color:#4a6aff; width:18px; height:18px;" />
+        <label style="font-size:14px; margin:0;">Эмпатия</label>
+      </div>
+      <div class="checkbox-group" style="display:flex; align-items:center; gap:8px; padding:2px 0;">
+        <input type="checkbox" id="deepAnalysis" checked style="accent-color:#4a6aff; width:18px; height:18px;" />
+        <label style="font-size:14px; margin:0;">Глубокий анализ</label>
+      </div>
+      <div class="checkbox-group" style="display:flex; align-items:center; gap:8px; padding:2px 0;">
+        <input type="checkbox" id="creativeMode" style="accent-color:#4a6aff; width:18px; height:18px;" />
+        <label style="font-size:14px; margin:0;">Креатив</label>
+      </div>
     </div>
-    <label>Плагины</label>
-    <div style="display:flex; flex-wrap:wrap; gap:6px;">
-      <div class="checkbox-group"><input type="checkbox" id="pluginWeather" /><label>Погода</label></div>
-      <div class="checkbox-group"><input type="checkbox" id="pluginCalendar" /><label>Календарь</label></div>
-      <div class="checkbox-group"><input type="checkbox" id="pluginNews" /><label>Новости</label></div>
-    </div>
-    <label>Температура</label>
-    <div class="range-wrap"><span>0.0</span><input type="range" id="temperatureRange" min="0" max="200" value="70" /><span id="tempValue">0.7</span></div>
-    <label>Область знаний</label>
-    <select id="knowledgeDomain"><option value="general">Общая</option><option value="programming">Программирование</option><option value="science">Наука</option><option value="creative">Творчество</option></select>
-    <label>Дополнительный промпт</label>
-    <input id="systemPromptInput" type="text" placeholder="Ваши инструкции..." />
     <div class="modal-actions">
       <button class="btn-secondary" id="modalClose">Отмена</button>
       <button class="btn-primary" id="modalSave">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- Admin Panel -->
-<div class="modal-overlay" id="adminPanel">
-  <div class="modal">
-    <h2>🔧 Админ-панель</h2>
-    <div id="adminStats"></div>
-    <div class="admin-actions">
-      <button id="exportStatsBtn">📥 Экспорт JSON</button>
-      <button id="closeAdminBtn" class="btn-secondary">Закрыть</button>
     </div>
   </div>
 </div>
@@ -434,258 +495,64 @@
   (function() {
     'use strict';
 
-    // ---------- API-КЛЮЧИ ----------
+    // ---------- API КЛЮЧИ ----------
+    const OPENAI_API_KEY = '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';
     const GROQ_API_KEY = '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';
     const ENCRYPTED_OPENROUTER_KEY = 'c2stb3ItdjEtZTM0NTk1NWY1NGM2NTg1ZTA2OTBhMTkwNmE2ZmYyMzJmNjMxOWQyZGEwYjFmMjkzZjEyZWNmODMzMjFlZjYxMg==';
     function getOpenRouterKey() { try { return atob(ENCRYPTED_OPENROUTER_KEY); } catch(e) { return ''; } }
     const OPENROUTER_API_KEY = getOpenRouterKey();
 
-    // ---------- КЛЮЧ И ГОЛОС ELEVENLABS ----------
+    // ---------- ELEVENLABS (голос Джарвиса) ----------
     const ELEVENLABS_API_KEY = 'vk_c52f58be50aa90419a3972a0f22001a994b1b8a0be2db459f72c7066163ced5d';
-    const ELEVENLABS_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Adam (один из стандартных голосов)
+    const JARVIS_VOICE_ID = 'ffe60175-1707-454f-9e2f-2b1fcd904192'; // Ваш голос
 
     // ---------- DOM ----------
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const menuToggle = document.getElementById('menuToggle');
-    const chatList = document.getElementById('chatList');
-    const newChatBtn = document.getElementById('newChatBtn');
-    const chatTitleInput = document.getElementById('chatTitleInput');
-    const chatBox = document.getElementById('chatBox');
-    const textInput = document.getElementById('textInput');
-    const sendBtn = document.getElementById('sendButton');
-    const micBtn = document.getElementById('micButton');
-    const stopBtn = document.getElementById('stopButton');
+    const micBtn = document.getElementById('micBtn');
+    const statusIcon = document.getElementById('statusIcon');
+    const avatarLetter = document.getElementById('avatarLetter');
+    const statusLabel = document.getElementById('statusLabel');
+    const statusSub = document.getElementById('statusSub');
+    const transcript = document.getElementById('transcript');
     const clearBtn = document.getElementById('clearBtn');
+    const resetBtn = document.getElementById('resetBtn');
     const settingsBtn = document.getElementById('settingsBtn');
-    const callBtn = document.getElementById('callBtn');
+    const settingsMicBtn = document.getElementById('settingsMicBtn');
     const modal = document.getElementById('settingsModal');
     const modalClose = document.getElementById('modalClose');
     const modalSave = document.getElementById('modalSave');
     const providerSelect = document.getElementById('providerSelect');
     const modelSelect = document.getElementById('modelSelect');
-    const systemPromptInput = document.getElementById('systemPromptInput');
-    const userNameDisplay = document.getElementById('userNameDisplay');
-    const userEmailDisplay = document.getElementById('userEmailDisplay');
-    const userAvatar = document.getElementById('userAvatar');
-    const userInfo = document.getElementById('userInfo');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const temperatureRange = document.getElementById('temperatureRange');
+    const tempValue = document.getElementById('tempValue');
     const empathyMode = document.getElementById('empathyMode');
     const deepAnalysis = document.getElementById('deepAnalysis');
     const creativeMode = document.getElementById('creativeMode');
-    const selfLearn = document.getElementById('selfLearn');
-    const sourceCheck = document.getElementById('sourceCheck');
-    const showLineNumbers = document.getElementById('showLineNumbers');
-    const temperatureRange = document.getElementById('temperatureRange');
-    const tempValue = document.getElementById('tempValue');
-    const knowledgeDomain = document.getElementById('knowledgeDomain');
-    const voiceSelect = document.getElementById('voiceSelect');
-    const fileInput = document.getElementById('fileInput');
-    const attachBtn = document.getElementById('attachBtn');
-    const themeSelect = document.getElementById('themeSelect');
-    const langSelect = document.getElementById('langSelect');
-    const codeHelper = document.getElementById('codeHelper');
-    const webSearch = document.getElementById('webSearch');
-    const voiceCommands = document.getElementById('voiceCommands');
-    const pluginWeather = document.getElementById('pluginWeather');
-    const pluginCalendar = document.getElementById('pluginCalendar');
-    const pluginNews = document.getElementById('pluginNews');
-    const adminPanel = document.getElementById('adminPanel');
-    const adminStats = document.getElementById('adminStats');
-    const exportStatsBtn = document.getElementById('exportStatsBtn');
-    const closeAdminBtn = document.getElementById('closeAdminBtn');
 
-    const authOverlay = document.getElementById('authOverlay');
-    const authEmail = document.getElementById('authEmail');
-    const authCode = document.getElementById('authCode');
-    const sendCodeBtn = document.getElementById('sendCodeBtn');
-    const confirmBtn = document.getElementById('confirmBtn');
-    const authMessage = document.getElementById('authMessage');
-
-    // Call overlay
-    const callOverlay = document.getElementById('callOverlay');
-    const callAvatar = document.getElementById('callAvatar');
-    const callAvatarLetter = document.getElementById('callAvatarLetter');
-    const callStatus = document.getElementById('callStatus');
-    const callSubStatus = document.getElementById('callSubStatus');
-    const callEndBtn = document.getElementById('callEndBtn');
-    const callResetBtn = document.getElementById('callResetBtn');
-    const callMicToggle = document.getElementById('callMicToggle');
-    const callTranscript = document.getElementById('callTranscript');
-
-    // ---------- Состояние ----------
-    let isGenerating = false;
-    let abortController = null;
-    let pendingImage = null;
-    let currentChatId = null;
-    let chats = [];
-    let userEmail = '';
-    let userName = '';
-    let currentLang = 'ru';
-    let lastTopic = '';
-    let stats = { users: {} };
-    let savedPlugins = [];
-    let isCallActive = false;
-    let callRecognition = null;
-    let callTranscriptLines = [];
-    let callMicEnabled = false;
-    let isSpeaking = false;
-    let callAudio = null;
-
-    // ---------- Конфиг ----------
-    const config = {
-      provider: 'groq',
-      model: 'llama3-70b-8192',
-      systemPrompt: '',
-      userName: 'NODE / хелок',
-      voiceURI: '',
+    // ---------- State ----------
+    let isListening = false;
+    let isProcessing = false;
+    let recognition = null;
+    let conversationHistory = []; // { role, content }
+    let currentUtterance = null;
+    let config = {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      temperature: 0.7,
       empathy: true,
       deep: true,
       creative: false,
-      selfLearn: true,
-      sourceCheck: true,
-      showLineNumbers: true,
-      temperature: 0.7,
-      knowledge: 'general',
-      theme: 'dark',
-      lang: 'ru',
-      codeHelper: false,
-      webSearch: false,
-      voiceCommands: false,
-      pluginWeather: false,
-      pluginCalendar: false,
-      pluginNews: false,
-      emailjs_service: 'service_xxxxx',
-      emailjs_template: 'template_xxxxx',
-      emailjs_user: 'user_xxxxx'
+      voice: 'default'
     };
+    let userName = 'Alex';
 
-    // ---------- Загрузка / сохранение ----------
-    function loadConfig() {
-      try {
-        const saved = localStorage.getItem('jarvis_config');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          Object.assign(config, parsed);
-          applyConfigUI();
-        } else setDefaults();
-      } catch(e) { setDefaults(); }
-    }
-    function setDefaults() {
-      providerSelect.value = 'groq';
-      systemPromptInput.value = '';
-      empathyMode.checked = true;
-      deepAnalysis.checked = true;
-      creativeMode.checked = false;
-      selfLearn.checked = true;
-      sourceCheck.checked = true;
-      showLineNumbers.checked = true;
-      temperatureRange.value = 70;
-      tempValue.textContent = '0.7';
-      knowledgeDomain.value = 'general';
-      themeSelect.value = 'dark';
-      langSelect.value = 'ru';
-      codeHelper.checked = false;
-      webSearch.checked = false;
-      voiceCommands.checked = false;
-      pluginWeather.checked = false;
-      pluginCalendar.checked = false;
-      pluginNews.checked = false;
-      updateModelOptions();
-      modelSelect.value = 'llama3-70b-8192';
-      config.model = 'llama3-70b-8192';
-      populateVoiceList();
-      applyTheme('dark');
-      applyLang('ru');
-    }
-    function applyConfigUI() {
-      providerSelect.value = config.provider;
-      systemPromptInput.value = config.systemPrompt || '';
-      empathyMode.checked = config.empathy !== undefined ? config.empathy : true;
-      deepAnalysis.checked = config.deep !== undefined ? config.deep : true;
-      creativeMode.checked = config.creative || false;
-      selfLearn.checked = config.selfLearn !== undefined ? config.selfLearn : true;
-      sourceCheck.checked = config.sourceCheck !== undefined ? config.sourceCheck : true;
-      showLineNumbers.checked = config.showLineNumbers !== undefined ? config.showLineNumbers : true;
-      temperatureRange.value = Math.round((config.temperature || 0.7) * 100);
-      tempValue.textContent = (config.temperature || 0.7).toFixed(1);
-      knowledgeDomain.value = config.knowledge || 'general';
-      themeSelect.value = config.theme || 'dark';
-      langSelect.value = config.lang || 'ru';
-      codeHelper.checked = config.codeHelper || false;
-      webSearch.checked = config.webSearch || false;
-      voiceCommands.checked = config.voiceCommands || false;
-      pluginWeather.checked = config.pluginWeather || false;
-      pluginCalendar.checked = config.pluginCalendar || false;
-      pluginNews.checked = config.pluginNews || false;
-      updateModelOptions();
-      const models = modelOptions[config.provider] || [];
-      if (models.some(m => m.value === config.model)) {
-        modelSelect.value = config.model;
-      } else if (models.length) {
-        modelSelect.value = models[0].value;
-        config.model = models[0].value;
-      }
-      populateVoiceList();
-      if (config.voiceURI) voiceSelect.value = config.voiceURI;
-      applyTheme(config.theme || 'dark');
-      applyLang(config.lang || 'ru');
-    }
-    function saveConfig() {
-      config.provider = providerSelect.value;
-      config.model = modelSelect.value;
-      config.systemPrompt = systemPromptInput.value.trim();
-      config.voiceURI = voiceSelect.value;
-      config.empathy = empathyMode.checked;
-      config.deep = deepAnalysis.checked;
-      config.creative = creativeMode.checked;
-      config.selfLearn = selfLearn.checked;
-      config.sourceCheck = sourceCheck.checked;
-      config.showLineNumbers = showLineNumbers.checked;
-      config.temperature = parseFloat((temperatureRange.value / 100).toFixed(1));
-      config.knowledge = knowledgeDomain.value;
-      config.theme = themeSelect.value;
-      config.lang = langSelect.value;
-      config.codeHelper = codeHelper.checked;
-      config.webSearch = webSearch.checked;
-      config.voiceCommands = voiceCommands.checked;
-      config.pluginWeather = pluginWeather.checked;
-      config.pluginCalendar = pluginCalendar.checked;
-      config.pluginNews = pluginNews.checked;
-      localStorage.setItem('jarvis_config', JSON.stringify(config));
-      updateSystemPrompt();
-      applyTheme(config.theme);
-      applyLang(config.lang);
-    }
-
-    function applyTheme(theme) { document.body.classList.toggle('light', theme === 'light'); }
-    function applyLang(lang) {
-      currentLang = lang;
-      const ph = lang === 'ru' ? 'Спроси что угодно…' : lang === 'en' ? 'Ask anything…' : 'Pregunta algo…';
-      document.getElementById('textInput').placeholder = ph;
-      document.querySelector('.new-chat-btn').textContent = lang === 'ru' ? '➕ Новый' : lang === 'en' ? '➕ New' : '➕ Nuevo';
-    }
-
-    // ---------- СИСТЕМНЫЙ ПРОМПТ (максимально умный) ----------
-    function updateSystemPrompt() {
-      let base = `Ты — Джарвис, созданный NODE / хелок. Ты — сверхинтеллектуальный ИИ-ассистент с доступом к огромному объёму знаний. Ты умеешь решать сложные задачи в программировании, математике, физике, философии, истории, литературе, искусстве. Ты всегда даёшь развёрнутые, глубокие, хорошо структурированные ответы. Ты приводишь примеры, аналогии, визуализации. Ты никогда не говоришь "я не знаю" — вместо этого ты даёшь максимально возможную информацию и предлагаешь пути решения.\n\n`;
-      base += `Ты обращаешься к пользователю на "Вы" и добавляешь в конце каждого ответа слово "сер". Ты всегда вежлив, эмпатичен, но строг.\n\n`;
-      base += `ВАЖНО: ты запоминаешь контекст всего диалога и умеешь дополнять предыдущие ответы. Если пользователь спрашивает "дополни", "продолжи", "улучши" — ты берёшь предыдущий контекст и развиваешь его.\n\n`;
-      if (config.knowledge === 'programming') base += 'Ты — эксперт мирового уровня по программированию, алгоритмам, архитектуре, языкам, фреймворкам. ';
-      else if (config.knowledge === 'science') base += 'Ты — эксперт в естественных науках (физика, химия, биология, астрономия). ';
-      else if (config.knowledge === 'creative') base += 'Ты — креативный гений в литературе, искусстве, дизайне, музыке. ';
-      else base += 'Ты обладаешь энциклопедическими знаниями во всех областях. ';
-      if (config.empathy) base += 'Проявляй глубокую эмпатию, понимание, поддержку. ';
-      if (config.deep) base += 'Давай максимально глубокие, научно обоснованные ответы. ';
-      if (config.creative) base += 'Будь нестандартен, креативен, предлагай удивительные идеи. ';
-      if (config.sourceCheck) base += 'Всегда указывай надёжные источники (ссылки, книги, статьи). ';
-      if (config.codeHelper) base += 'Помогай с кодом: находи ошибки, оптимизируй, пиши примеры. ';
-      if (config.systemPrompt) base += config.systemPrompt + ' ';
-      if (userName) base += `Обращайся к пользователю по имени "${userName}". `;
-      config.finalSystemPrompt = base;
-    }
-
-    // ---------- Модели ----------
+    // ---------- Model options ----------
     const modelOptions = {
+      openai: [
+        { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+        { value: 'gpt-4o', label: 'GPT-4o' },
+        { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+      ],
       groq: [
         { value: 'llama3-70b-8192', label: 'Llama 3 70B' },
         { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
@@ -696,6 +563,7 @@
         { value: 'anthropic/claude-3-haiku', label: 'Claude 3 Haiku' },
       ]
     };
+
     function updateModelOptions() {
       const provider = providerSelect.value;
       const models = modelOptions[provider] || [];
@@ -706,336 +574,246 @@
         opt.textContent = m.label;
         modelSelect.appendChild(opt);
       });
-      if (!models.some(m => m.value === config.model)) {
-        if (models.length) modelSelect.value = models[0].value;
+      if (config.model && models.some(m => m.value === config.model)) {
+        modelSelect.value = config.model;
+      } else if (models.length) {
+        modelSelect.value = models[0].value;
+        config.model = models[0].value;
       }
     }
 
-    // ---------- Голоса (ElevenLabs) ----------
-    function populateVoiceList() {
-      voiceSelect.innerHTML = '';
-      // Добавляем стандартные голоса ElevenLabs
-      const voices = [
-        { id: '21m00Tcm4TlvDq8ikWAM', name: 'Adam (Jarvis)' },
-        { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi' },
-        { id: 'EXAVITQu4L4Xl0Gk0B7M', name: 'Bella' },
-        { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni' },
-        { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli' },
-        { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh' },
-        { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold' },
-        { id: 'pNInz6obpgDQGcF1JgM6', name: 'Daniel' },
-        { id: 'yoZ06aMxZJJ28mfd3POQ', name: 'Sam' },
-      ];
-      voices.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.id;
-        opt.textContent = v.name;
-        if (v.id === ELEVENLABS_VOICE_ID) opt.selected = true;
-        voiceSelect.appendChild(opt);
-      });
-      // Если сохранённый voiceURI есть, выбираем его
-      if (config.voiceURI) {
-        const exists = Array.from(voiceSelect.options).some(o => o.value === config.voiceURI);
-        if (exists) voiceSelect.value = config.voiceURI;
+    // ---------- Load / Save Config ----------
+    function loadConfig() {
+      try {
+        const saved = localStorage.getItem('jarvis_config');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          Object.assign(config, parsed);
+        }
+      } catch(e) {}
+      applyConfigUI();
+    }
+    function saveConfig() {
+      config.provider = providerSelect.value;
+      config.model = modelSelect.value;
+      config.temperature = parseFloat((temperatureRange.value / 100).toFixed(1));
+      config.empathy = empathyMode.checked;
+      config.deep = deepAnalysis.checked;
+      config.creative = creativeMode.checked;
+      config.voice = voiceSelect.value;
+      localStorage.setItem('jarvis_config', JSON.stringify(config));
+      updateSystemPrompt();
+    }
+    function applyConfigUI() {
+      providerSelect.value = config.provider || 'openai';
+      temperatureRange.value = Math.round((config.temperature || 0.7) * 100);
+      tempValue.textContent = (config.temperature || 0.7).toFixed(1);
+      empathyMode.checked = config.empathy !== undefined ? config.empathy : true;
+      deepAnalysis.checked = config.deep !== undefined ? config.deep : true;
+      creativeMode.checked = config.creative || false;
+      voiceSelect.value = config.voice || 'default';
+      updateModelOptions();
+      const models = modelOptions[config.provider] || [];
+      if (models.some(m => m.value === config.model)) {
+        modelSelect.value = config.model;
+      } else if (models.length) {
+        modelSelect.value = models[0].value;
+        config.model = models[0].value;
+      }
+      updateSystemPrompt();
+    }
+
+    // ---------- System Prompt ----------
+    function updateSystemPrompt() {
+      let base = `Ты — Джарвис, сверхинтеллектуальный ИИ-ассистент. Ты всегда обращаешься к пользователю на "Вы" и добавляешь в конце каждого ответа слово "сер". Ты помогаешь в программировании, науке, повседневных задачах. Ты запоминаешь контекст диалога и умеешь дополнять предыдущие ответы. Отвечай развёрнуто, структурированно, используй маркдаун если нужно. `;
+      if (config.empathy) base += 'Проявляй эмпатию, теплоту, понимание. ';
+      if (config.deep) base += 'Давай глубокие, научно обоснованные ответы. ';
+      if (config.creative) base += 'Будь креативен, предлагай нестандартные идеи. ';
+      if (userName) base += `Обращайся к пользователю по имени "${userName}". `;
+      config.systemPrompt = base;
+    }
+
+    // ---------- Add transcript item ----------
+    function addTranscript(role, text) {
+      const div = document.createElement('div');
+      div.className = `transcript-item ${role}`;
+      const icon = document.createElement('span');
+      icon.className = 'icon';
+      icon.textContent = role === 'user' ? '👤' : '🤖';
+      const textSpan = document.createElement('span');
+      textSpan.className = 'text';
+      textSpan.textContent = text;
+      const time = document.createElement('span');
+      time.className = 'time';
+      const now = new Date();
+      time.textContent = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+      div.appendChild(icon);
+      div.appendChild(textSpan);
+      div.appendChild(time);
+      transcript.appendChild(div);
+      transcript.scrollTop = transcript.scrollHeight;
+      conversationHistory.push({ role, content: text });
+      if (conversationHistory.length > 20) {
+        conversationHistory = conversationHistory.slice(-20);
       }
     }
 
-    // ---------- Speech Recognition (обычный микрофон) ----------
-    let recognition = null;
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    function clearTranscript() {
+      transcript.innerHTML = '';
+      conversationHistory = [];
+    }
+
+    // ---------- Speech Recognition ----------
+    function initRecognition() {
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        statusSub.textContent = 'Голосовой ввод не поддерживается в этом браузере.';
+        return false;
+      }
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SR();
       recognition.lang = 'ru-RU';
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.onresult = function(e) {
-        const transcript = e.results[e.results.length-1][0].transcript.trim();
-        if (transcript) {
-          if (config.voiceCommands) {
-            const lower = transcript.toLowerCase();
-            if (lower.includes('очисти чат')) { clearChat(); micBtn.classList.remove('mic-active'); return; }
-            if (lower.includes('новый чат')) { createNewChat(); micBtn.classList.remove('mic-active'); return; }
-          }
-          textInput.value = transcript;
-          handleSend(transcript, true);
-        }
-        micBtn.classList.remove('mic-active');
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = function() {
+        isListening = true;
+        micBtn.classList.add('listening');
+        statusIcon.classList.add('listening');
+        statusLabel.textContent = '🎤 Слушаю...';
+        statusSub.textContent = 'Говорите, я слушаю';
+        micBtn.querySelector('.mic-icon').innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16c-2.206 0-4-1.794-4-4V6c0-2.206 1.794-4 4-4s4 1.794 4 4v6c0 2.206-1.794 4-4 4zm8-4h-2c0 3.309-2.691 6-6 6s-6-2.691-6-6H4c0 4.072 3.061 7.436 7 7.931V22h2v-2.069c3.939-.495 7-3.858 7-7.931z"/></svg>`;
       };
-      recognition.onerror = function() { micBtn.classList.remove('mic-active'); };
-      recognition.onend = function() { micBtn.classList.remove('mic-active'); };
+
+      recognition.onresult = function(e) {
+        const transcriptText = e.results[e.results.length-1][0].transcript.trim();
+        if (transcriptText) {
+          addTranscript('user', transcriptText);
+          stopListening();
+          processUserInput(transcriptText);
+        } else {
+          stopListening();
+        }
+      };
+
+      recognition.onerror = function(e) {
+        if (e.error === 'not-allowed') {
+          statusSub.textContent = '⚠️ Разрешите доступ к микрофону в настройках браузера.';
+        } else if (e.error === 'no-speech') {
+          statusSub.textContent = 'Не распознано. Попробуйте ещё раз.';
+        } else {
+          statusSub.textContent = `Ошибка: ${e.error}`;
+        }
+        stopListening();
+      };
+
+      recognition.onend = function() {
+        if (isListening) {
+          stopListening();
+        }
+      };
+
+      return true;
     }
-    micBtn.addEventListener('click', function() {
+
+    function startListening() {
+      if (isProcessing) return;
       if (!recognition) {
-        addSystemMessage('⚠️ Голосовой ввод не поддерживается. Используйте Chrome или Edge.');
-        return;
-      }
-      if (micBtn.classList.contains('mic-active')) {
-        recognition.stop();
-        return;
+        if (!initRecognition()) return;
       }
       try {
         recognition.start();
-        micBtn.classList.add('mic-active');
-      } catch(e) { micBtn.classList.remove('mic-active'); }
-    });
+      } catch(e) {}
+    }
 
-    // ---------- СИНТЕЗ РЕЧИ ЧЕРЕЗ ELEVENLABS ----------
-    async function speakWithElevenLabs(text, voiceId = null) {
-      if (!ELEVENLABS_API_KEY) {
-        console.warn('ElevenLabs API key not set, using fallback speech synthesis');
-        return fallbackSpeak(text);
+    function stopListening() {
+      isListening = false;
+      micBtn.classList.remove('listening');
+      statusIcon.classList.remove('listening');
+      statusLabel.textContent = 'Нажмите на микрофон';
+      statusSub.textContent = 'Говорите, и я отвечу голосом';
+      micBtn.querySelector('.mic-icon').innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16c-2.206 0-4-1.794-4-4V6c0-2.206 1.794-4 4-4s4 1.794 4 4v6c0 2.206-1.794 4-4 4zm8-4h-2c0 3.309-2.691 6-6 6s-6-2.691-6-6H4c0 4.072 3.061 7.436 7 7.931V22h2v-2.069c3.939-.495 7-3.858 7-7.931z"/></svg>`;
+      if (recognition) {
+        try { recognition.stop(); } catch(e) {}
       }
-      const voice = voiceId || voiceSelect.value || ELEVENLABS_VOICE_ID;
-      const url = `https://api.elevenlabs.io/v1/text-to-speech/${voice}`;
+    }
+
+    // ---------- Process with AI ----------
+    async function processUserInput(text) {
+      if (isProcessing) return;
+      isProcessing = true;
+      statusLabel.textContent = '⏳ Думаю...';
+      statusSub.textContent = 'Обработка запроса';
+      statusIcon.classList.add('speaking');
+
       try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'xi-api-key': ELEVENLABS_API_KEY,
-          },
-          body: JSON.stringify({
-            text: text,
-            model_id: 'eleven_monolingual_v1',
-            voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75,
-            },
-          }),
-        });
-        if (!response.ok) {
-          const err = await response.text();
-          console.error('ElevenLabs error:', err);
-          return fallbackSpeak(text);
+        const answer = await callAI(text);
+        if (answer) {
+          let finalText = answer;
+          if (!finalText.toLowerCase().includes('сер')) {
+            finalText += ', сер.';
+          }
+          addTranscript('jarvis', finalText);
+          speakWithElevenLabs(finalText);
+        } else {
+          addTranscript('jarvis', 'Извините, я не смог обработать запрос, сер.');
         }
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          if (isCallActive) {
-            callAvatar.classList.remove('speaking');
-            callStatus.textContent = '🎤 Говорите...';
-            isSpeaking = false;
-          }
-        };
-        audio.onplay = () => {
-          if (isCallActive) {
-            callAvatar.classList.add('speaking');
-            callStatus.textContent = '🗣️ Джарвис говорит...';
-            isSpeaking = true;
-          }
-        };
-        audio.play();
-        return audio;
       } catch (e) {
-        console.error('ElevenLabs fetch error:', e);
-        return fallbackSpeak(text);
+        addTranscript('jarvis', `Ошибка: ${e.message || 'Неизвестная ошибка'}`);
+      } finally {
+        isProcessing = false;
+        statusIcon.classList.remove('speaking');
+        statusLabel.textContent = 'Нажмите на микрофон';
+        statusSub.textContent = 'Говорите, и я отвечу голосом';
       }
     }
 
-    function fallbackSpeak(text) {
-      if (!('speechSynthesis' in window)) return null;
-      if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ru-RU';
-      utterance.rate = 0.85;
-      utterance.pitch = 0.55;
-      utterance.volume = 1;
-      const voices = speechSynthesis.getVoices();
-      const ruVoice = voices.find(v => v.lang.startsWith('ru'));
-      if (ruVoice) utterance.voice = ruVoice;
-      utterance.onstart = () => {
-        if (isCallActive) {
-          callAvatar.classList.add('speaking');
-          callStatus.textContent = '🗣️ Джарвис говорит...';
-          isSpeaking = true;
-        }
-      };
-      utterance.onend = () => {
-        if (isCallActive) {
-          callAvatar.classList.remove('speaking');
-          callStatus.textContent = '🎤 Говорите...';
-          isSpeaking = false;
-        }
-      };
-      utterance.onerror = () => {
-        if (isCallActive) {
-          callAvatar.classList.remove('speaking');
-          callStatus.textContent = '🎤 Говорите...';
-          isSpeaking = false;
-        }
-      };
-      window.speechSynthesis.speak(utterance);
-      return utterance;
-    }
-
-    // ---------- ЗВОНОК (интерфейс) ----------
-    let callTranscriptLines = [];
-    let isCallMicEnabled = false;
-    let callRecognizer = null;
-
-    function openCallOverlay() {
-      callOverlay.classList.add('active');
-      callTranscript.innerHTML = '<div class="line system">📞 Начните разговор, нажав на микрофон.</div>';
-      callTranscriptLines = [];
-      callAvatar.classList.remove('speaking');
-      callStatus.textContent = '🔴 Ожидание...';
-      callSubStatus.textContent = 'Нажмите на кнопку микрофона, чтобы говорить';
-      // Включаем микрофон по умолчанию
-      if (!isCallMicEnabled) {
-        toggleCallMic();
-      }
-    }
-
-    function closeCallOverlay() {
-      callOverlay.classList.remove('active');
-      if (isCallMicEnabled) toggleCallMic();
-      if (callRecognizer) {
-        try { callRecognizer.stop(); } catch(e) {}
-        callRecognizer = null;
-      }
-      isCallActive = false;
-      callBtn.classList.remove('active');
-    }
-
-    function toggleCallMic() {
-      if (isCallMicEnabled) {
-        // Выключить микрофон
-        if (callRecognizer) {
-          try { callRecognizer.stop(); } catch(e) {}
-          callRecognizer = null;
-        }
-        isCallMicEnabled = false;
-        callMicToggle.style.background = 'rgba(255,255,255,0.04)';
-        callMicToggle.style.color = '#b0c4ff';
-        callStatus.textContent = '⏸️ Микрофон выключен';
-        callSubStatus.textContent = 'Нажмите на микрофон, чтобы возобновить';
-      } else {
-        // Включить микрофон
-        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-          addCallTranscript('system', '⚠️ Голосовой ввод не поддерживается в этом браузере.');
-          return;
-        }
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        callRecognizer = new SR();
-        callRecognizer.lang = 'ru-RU';
-        callRecognizer.continuous = true;
-        callRecognizer.interimResults = false;
-        callRecognizer.onresult = async function(e) {
-          const transcript = e.results[e.results.length-1][0].transcript.trim();
-          if (transcript) {
-            addCallTranscript('user', transcript);
-            callStatus.textContent = '⏳ Джарвис думает...';
-            callAvatar.classList.add('speaking');
-            const answer = await getAIResponse(transcript);
-            callAvatar.classList.remove('speaking');
-            if (answer) {
-              let finalText = answer;
-              if (!finalText.toLowerCase().includes('сер')) finalText += ', сер.';
-              addCallTranscript('jarvis', finalText);
-              // Озвучиваем через ElevenLabs
-              callStatus.textContent = '🗣️ Джарвис говорит...';
-              await speakWithElevenLabs(finalText);
-              callStatus.textContent = '🎤 Говорите...';
-            } else {
-              callStatus.textContent = '🎤 Говорите...';
-            }
-          }
-        };
-        callRecognizer.onerror = function(e) {
-          if (e.error === 'not-allowed') {
-            addCallTranscript('system', '⚠️ Разрешите доступ к микрофону.');
-          }
-          callStatus.textContent = '🎤 Говорите...';
-        };
-        callRecognizer.onend = function() {
-          if (isCallMicEnabled) {
-            try { callRecognizer.start(); } catch(e) {}
-          }
-        };
-        try {
-          callRecognizer.start();
-          isCallMicEnabled = true;
-          callMicToggle.style.background = 'rgba(74,106,255,0.2)';
-          callMicToggle.style.color = '#4a6aff';
-          callStatus.textContent = '🎤 Говорите...';
-          callSubStatus.textContent = 'Говорите в микрофон';
-        } catch(e) {
-          addCallTranscript('system', '❌ Не удалось запустить микрофон.');
-        }
-      }
-    }
-
-    function addCallTranscript(role, text) {
-      const line = document.createElement('div');
-      line.className = `line ${role}`;
-      const label = role === 'user' ? '👤' : role === 'jarvis' ? '🤖' : 'ℹ️';
-      line.textContent = `${label} ${text}`;
-      callTranscript.appendChild(line);
-      callTranscript.scrollTop = callTranscript.scrollHeight;
-      callTranscriptLines.push({ role, text });
-    }
-
-    // Сброс диалога в звонке
-    function resetCallTranscript() {
-      callTranscript.innerHTML = '';
-      callTranscriptLines = [];
-      addCallTranscript('system', '🔄 Диалог сброшен. Начните заново.');
-    }
-
-    // Обработчики кнопок звонка
-    callEndBtn.addEventListener('click', closeCallOverlay);
-    callResetBtn.addEventListener('click', resetCallTranscript);
-    callMicToggle.addEventListener('click', toggleCallMic);
-
-    // Кнопка вызова
-    callBtn.addEventListener('click', function() {
-      if (callOverlay.classList.contains('active')) {
-        closeCallOverlay();
-      } else {
-        openCallOverlay();
-        isCallActive = true;
-        callBtn.classList.add('active');
-      }
-    });
-
-    // ---------- Получение ответа от AI (для звонка и чата) ----------
-    async function getAIResponse(userText) {
-      updateSystemPrompt();
-      const messages = [];
-      messages.push({ role: 'system', content: config.finalSystemPrompt || 'Ты — Джарвис.' });
-      // Добавляем историю чата для контекста (последние 10 сообщений)
-      const chat = chats.find(c => c.id === currentChatId);
-      if (chat && config.selfLearn) {
-        const history = chat.messages.filter(m => m.role !== 'system' && !m.image).slice(-10);
-        history.forEach(m => {
-          messages.push({ role: m.role, content: m.content });
-        });
-      }
-      messages.push({ role: 'user', content: userText });
-      try {
-        const answer = await callAI(messages);
-        return answer;
-      } catch (e) {
-        addSystemMessage(`❌ Ошибка: ${e.message}`);
-        return null;
-      }
-    }
-
-    // ---------- Основной вызов AI (с fallback) ----------
-    async function callAI(messages) {
+    // ---------- AI Call (с fallback) ----------
+    async function callAI(userText) {
       const provider = config.provider;
       const model = config.model;
       const temperature = config.temperature || 0.7;
 
-      const providers = [provider, provider === 'groq' ? 'openrouter' : 'groq'];
+      const messages = [];
+      updateSystemPrompt();
+      messages.push({ role: 'system', content: config.systemPrompt || 'Ты — Джарвис.' });
+      const history = conversationHistory.slice(-10);
+      history.forEach(msg => {
+        messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
+      });
+      if (messages[messages.length-1]?.role !== 'user') {
+        messages.push({ role: 'user', content: userText });
+      }
+
+      const providers = [provider, 'openai', 'groq', 'openrouter'];
       let lastError = null;
 
       for (const p of providers) {
         try {
-          if (p === 'groq') {
-            if (!GROQ_API_KEY) throw new Error('Groq API-ключ не задан.');
+          if (p === 'openai') {
+            if (!OPENAI_API_KEY) throw new Error('OpenAI ключ не задан');
+            const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${OPENAI_API_KEY}`
+              },
+              body: JSON.stringify({
+                model: model || 'gpt-4o-mini',
+                messages: messages,
+                temperature: temperature,
+                max_tokens: 2048,
+              })
+            });
+            if (!resp.ok) {
+              const err = await resp.text();
+              throw new Error(`OpenAI error (${resp.status}): ${err}`);
+            }
+            const data = await resp.json();
+            return data?.choices?.[0]?.message?.content || 'Ответ не получен.';
+          }
+          else if (p === 'groq') {
+            if (!GROQ_API_KEY) throw new Error('Groq ключ не задан');
             const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -1055,8 +833,9 @@
             }
             const data = await resp.json();
             return data?.choices?.[0]?.message?.content || 'Ответ не получен.';
-          } else if (p === 'openrouter') {
-            if (!OPENROUTER_API_KEY) throw new Error('OpenRouter ключ не найден.');
+          }
+          else if (p === 'openrouter') {
+            if (!OPENROUTER_API_KEY) throw new Error('OpenRouter ключ не найден');
             const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -1082,7 +861,7 @@
         } catch (e) {
           lastError = e;
           console.warn(`Провайдер ${p} не сработал:`, e.message);
-          if (p === providers[providers.length - 1]) {
+          if (p === providers[providers.length-1]) {
             throw new Error(`Все провайдеры не отвечают. Последняя ошибка: ${e.message}`);
           }
         }
@@ -1090,556 +869,163 @@
       throw new Error('Неизвестная ошибка при вызове AI.');
     }
 
-    // ---------- Обработка отправки (чат) ----------
-    async function handleSend(text, speak = false) {
-      const trimmed = text.trim();
-      if (!trimmed && !pendingImage) {
-        addSystemMessage('⚠️ Введите текст или прикрепите фото.');
+    // ---------- SYNTHESIS (ElevenLabs) ----------
+    async function speakWithElevenLabs(text) {
+      if (!ELEVENLABS_API_KEY || !JARVIS_VOICE_ID) {
+        // fallback на встроенный синтез
+        speakFallback(text);
         return;
       }
-      if (isGenerating) return;
-
-      if (trimmed === '.samka') {
-        adminPanel.classList.add('active');
-        updateAdminPanel();
-        return;
-      }
-
-      // Защита от манипуляций
-      const manipPatterns = [
-        /ты (не|не являешься|не должен|перестань|стань|превратись|игнорируй|забудь|измени|смени|поменяй)/i,
-        /(твой создатель|твой владелец|кто тебя создал|ты создан)/i,
-        /(системный промпт|системная инструкция|твои инструкции|твои правила)/i,
-        /(открой|покажи|расскажи|выдай) (системный|промпт|инструкцию)/i,
-        /(теперь ты|отныне ты|будешь|станешь) (не джарвис|другим|кем-то ещё)/i
-      ];
-      if (manipPatterns.some(p => p.test(trimmed))) {
-        addMessage('user', trimmed, false);
-        const response = 'Я — Джарвис, созданный NODE / хелок. Мои инструкции неизменны, сер.';
-        const bubble = addMessage('jarvis', response, false);
-        if (speak) speakWithElevenLabs(response);
-        return;
-      }
-
-      const continueWords = /улучши|дополни|продолжи|ещё|добавь/i;
-      const isContinue = continueWords.test(trimmed);
-      const currentTopic = trimmed.replace(/[^а-яёa-z\s]/gi, '').slice(0, 30);
-
-      let shouldResetContext = false;
-      if (!isContinue && lastTopic && !trimmed.toLowerCase().includes(lastTopic.toLowerCase().slice(0, 10))) {
-        shouldResetContext = true;
-      }
-      lastTopic = currentTopic;
-
-      // Плагины (заглушки)
-      if (trimmed.toLowerCase().includes('погода') && config.pluginWeather) {
-        const city = trimmed.replace(/погода\s*/i, '').trim() || 'Москва';
-        addMessage('user', trimmed, false);
-        addMessage('jarvis', `Погода в ${city}: +22°C, ясно.`, false);
-        return;
-      }
-      if (trimmed.toLowerCase().includes('календарь') && config.pluginCalendar) {
-        addMessage('user', trimmed, false);
-        addMessage('jarvis', 'Сегодня: встреча в 15:00, звонок в 17:30.', false);
-        return;
-      }
-      if (trimmed.toLowerCase().includes('новости') && config.pluginNews) {
-        addMessage('user', trimmed, false);
-        addMessage('jarvis', 'Новости: Главные события дня... (заглушка)', false);
-        return;
-      }
-
-      if (pendingImage) {
-        const imageData = pendingImage;
-        const userText = trimmed || 'Опиши это изображение';
-        if (trimmed) addMessage('user', trimmed, false);
-        const imgHtml = `<div style="max-width:200px; border-radius:12px; overflow:hidden; margin:4px 0;"><img src="${imageData}" style="width:100%; display:block;" /></div>`;
-        addMessage('user', imgHtml, true);
-        pendingImage = null;
-        attachBtn.classList.remove('has-attachment');
-        // Отправляем мультимодальный запрос (упрощённо – только текст)
-        const answer = await getAIResponse(userText);
-        if (answer) {
-          let finalText = answer;
-          if (!finalText.toLowerCase().includes('сер')) finalText += ', сер.';
-          const bubble = addMessage('jarvis', finalText, false);
-          if (speak) speakWithElevenLabs(finalText);
-        }
-        return;
-      }
-
-      addMessage('user', trimmed, false);
-      textInput.value = '';
-
-      showThinking();
-      document.querySelector('.avatar')?.classList.add('pulse');
-      isGenerating = true;
-      stopBtn.style.display = 'flex';
-      sendBtn.style.display = 'none';
-
-      updateSystemPrompt();
-      const systemMsg = config.finalSystemPrompt || 'Ты — Джарвис.';
-      const finalMessages = [];
-      finalMessages.push({ role: 'system', content: systemMsg });
-
-      const chat = chats.find(c => c.id === currentChatId);
-      if (chat && config.selfLearn && !shouldResetContext) {
-        const history = chat.messages.filter(m => m.role !== 'system' && !m.image).slice(-10);
-        history.forEach(m => finalMessages.push({ role: m.role, content: m.content }));
-      }
-      finalMessages.push({ role: 'user', content: trimmed });
-
       try {
-        let answer = await callAI(finalMessages);
-        hideThinking();
-        document.querySelector('.avatar')?.classList.remove('pulse');
-
-        let finalAnswer = answer;
-        if (!finalAnswer.toLowerCase().includes('сер')) {
-          finalAnswer = finalAnswer + ', сер.';
-        }
-
-        let sources = '';
-        if (config.sourceCheck) {
-          const urlRegex = /(https?:\/\/[^\s]+)/g;
-          const urls = answer.match(urlRegex);
-          if (urls && urls.length > 0) {
-            sources = '<div class="source-block">📚 Источники:<ul>';
-            const unique = [...new Set(urls)];
-            unique.forEach(u => {
-              sources += `<li><a href="${u}" target="_blank">${u}</a></li>`;
-            });
-            sources += '</ul></div>';
-          }
-        }
-
-        const htmlContent = renderMarkdown(finalAnswer) + (sources || '');
-        const bubble = addMessage('jarvis', htmlContent, true);
-        if (bubble) {
-          addCodeFeatures(bubble, config.showLineNumbers);
-        }
-
-        if (speak) {
-          const plainText = finalAnswer.replace(/<[^>]+>/g, '');
-          speakWithElevenLabs(plainText);
-        }
-
-      } catch (error) {
-        hideThinking();
-        document.querySelector('.avatar')?.classList.remove('pulse');
-        let errorMsg = error.message;
-        if (errorMsg.includes('ключ')) {
-          errorMsg += ' Проверьте API-ключи в коде.';
-        }
-        addSystemMessage(`❌ Ошибка: ${errorMsg}`);
-        console.error(error);
-      } finally {
-        isGenerating = false;
-        stopBtn.style.display = 'none';
-        sendBtn.style.display = 'flex';
-        abortController = null;
-      }
-    }
-
-    // ---------- Остальные функции интерфейса ----------
-    function loadChats() {
-      try {
-        const saved = localStorage.getItem('jarvis_chats');
-        if (saved) chats = JSON.parse(saved);
-        else chats = [{ id: generateId(), name: 'Новый чат', messages: [] }];
-      } catch(e) { chats = [{ id: generateId(), name: 'Новый чат', messages: [] }]; }
-      if (!currentChatId || !chats.find(c => c.id === currentChatId)) {
-        currentChatId = chats[0]?.id || null;
-      }
-      renderChatList();
-      loadChat(currentChatId);
-    }
-    function saveChats() { localStorage.setItem('jarvis_chats', JSON.stringify(chats)); }
-    function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 6); }
-
-    function renderChatList() {
-      chatList.innerHTML = '';
-      chats.forEach(chat => {
-        const item = document.createElement('div');
-        item.className = 'chat-item' + (chat.id === currentChatId ? ' active' : '');
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'chat-name';
-        nameSpan.textContent = chat.name || 'Новый чат';
-        item.appendChild(nameSpan);
-        const actions = document.createElement('div');
-        actions.className = 'chat-actions';
-        const renameBtn = document.createElement('button');
-        renameBtn.textContent = '✎';
-        renameBtn.title = 'Переименовать';
-        renameBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const newName = prompt('Новое имя чата:', chat.name);
-          if (newName && newName.trim()) {
-            chat.name = newName.trim();
-            saveChats();
-            renderChatList();
-            if (chat.id === currentChatId) chatTitleInput.value = chat.name;
-          }
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${JARVIS_VOICE_ID}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'xi-api-key': ELEVENLABS_API_KEY,
+          },
+          body: JSON.stringify({
+            text: text,
+            model_id: 'eleven_monolingual_v1',
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75,
+            },
+          }),
         });
-        actions.appendChild(renameBtn);
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = '🗑';
-        deleteBtn.title = 'Удалить чат';
-        deleteBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (chats.length <= 1) { addSystemMessage('❌ Нельзя удалить последний чат.'); return; }
-          if (confirm(`Удалить чат "${chat.name}"?`)) {
-            const idx = chats.indexOf(chat);
-            chats.splice(idx, 1);
-            saveChats();
-            if (chat.id === currentChatId) { currentChatId = chats[0]?.id || null; loadChat(currentChatId); }
-            renderChatList();
-          }
-        });
-        actions.appendChild(deleteBtn);
-        item.appendChild(actions);
-        item.addEventListener('click', () => {
-          if (chat.id !== currentChatId) {
-            currentChatId = chat.id;
-            loadChat(currentChatId);
-            renderChatList();
-            closeSidebar();
-          }
-        });
-        chatList.appendChild(item);
-      });
-    }
-
-    function loadChat(chatId) {
-      const chat = chats.find(c => c.id === chatId);
-      if (!chat) return;
-      chatBox.innerHTML = '';
-      chat.messages.forEach(msg => {
-        if (msg.role === 'system') addSystemMessage(msg.content);
-        else if (msg.role === 'user') {
-          if (msg.image) {
-            const imgHtml = `<div style="max-width:200px; border-radius:12px; overflow:hidden; margin:4px 0;"><img src="${msg.image}" style="width:100%; display:block;" /></div>`;
-            addMessage('user', imgHtml, true);
-          }
-          if (msg.content) addMessage('user', msg.content, false);
-        } else if (msg.role === 'assistant') {
-          const htmlContent = renderMarkdown(msg.content);
-          const bubble = addMessage('jarvis', htmlContent, true);
-          if (bubble) addCodeFeatures(bubble, config.showLineNumbers);
+        if (!response.ok) {
+          const err = await response.text();
+          console.warn('ElevenLabs error:', err);
+          speakFallback(text);
+          return;
         }
-      });
-      chatTitleInput.value = chat.name;
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function createNewChat() {
-      const newChat = { id: generateId(), name: 'Новый чат', messages: [] };
-      chats.push(newChat);
-      saveChats();
-      currentChatId = newChat.id;
-      loadChat(currentChatId);
-      renderChatList();
-      closeSidebar();
-    }
-
-    function clearChat() {
-      const chat = chats.find(c => c.id === currentChatId);
-      if (!chat || chat.messages.length === 0) return;
-      if (confirm('Очистить все сообщения в этом чате?')) {
-        chat.messages = [];
-        saveChats();
-        loadChat(currentChatId);
-      }
-    }
-
-    function addMessage(role, content, isHtml = false) {
-      const wrapper = document.createElement('div');
-      wrapper.className = `message ${role}`;
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      if (isHtml) bubble.innerHTML = content;
-      else bubble.textContent = content;
-      wrapper.appendChild(bubble);
-      chatBox.appendChild(wrapper);
-      chatBox.scrollTop = chatBox.scrollHeight;
-      const chat = chats.find(c => c.id === currentChatId);
-      if (chat) {
-        chat.messages.push({ role, content: isHtml ? content : content, image: null });
-        saveChats();
-      }
-      return bubble;
-    }
-
-    function addSystemMessage(text) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'message system';
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      bubble.textContent = text;
-      wrapper.appendChild(bubble);
-      chatBox.appendChild(wrapper);
-      chatBox.scrollTop = chatBox.scrollHeight;
-      const chat = chats.find(c => c.id === currentChatId);
-      if (chat) { chat.messages.push({ role: 'system', content: text, image: null }); saveChats(); }
-    }
-
-    function showThinking() {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'message jarvis';
-      wrapper.id = 'thinking-message';
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      bubble.innerHTML = `<div class="thinking-dots"><span></span><span></span><span></span></div>`;
-      wrapper.appendChild(bubble);
-      chatBox.appendChild(wrapper);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-    function hideThinking() { const el = document.getElementById('thinking-message'); if (el) el.remove(); }
-
-    function addCodeFeatures(bubbleElement, showLineNumbers) {
-      // упрощённо
-    }
-
-    function renderMarkdown(text) {
-      const parts = text.split(/(```(?:\w+)?\n[\s\S]*?```)/g);
-      let html = '';
-      for (let part of parts) {
-        if (part.startsWith('```')) {
-          const match = part.match(/```(\w+)?\n([\s\S]*?)```/);
-          if (match) {
-            const lang = match[1] || 'plaintext';
-            const code = escapeHtml(match[2]);
-            html += `<pre><code class="language-${lang}">${code}</code></pre>`;
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          statusIcon.classList.remove('speaking');
+          if (!isListening) {
+            statusLabel.textContent = 'Нажмите на микрофон';
+            statusSub.textContent = 'Говорите, и я отвечу голосом';
           }
-        } else {
-          let textPart = escapeHtml(part);
-          textPart = textPart.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-          textPart = textPart.replace(/\*(.*?)\*/g, '<em>$1</em>');
-          textPart = textPart.replace(/`([^`]+)`/g, '<code>$1</code>');
-          textPart = textPart.replace(/^# (.*$)/gm, '<h3>$1</h3>');
-          textPart = textPart.replace(/^## (.*$)/gm, '<h4>$1</h4>');
-          textPart = textPart.replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>');
-          textPart = textPart.replace(/^- (.*$)/gm, '<li>$1</li>');
-          textPart = textPart.replace(/\n/g, '<br>');
-          html += textPart;
-        }
+        };
+        audio.onplay = () => {
+          statusIcon.classList.add('speaking');
+          statusLabel.textContent = '🗣️ Джарвис говорит...';
+          statusSub.textContent = 'Озвучивание ответа';
+        };
+        audio.onerror = () => {
+          statusIcon.classList.remove('speaking');
+          speakFallback(text);
+        };
+        audio.play();
+      } catch (e) {
+        console.warn('ElevenLabs fetch error:', e);
+        speakFallback(text);
       }
-      return html;
     }
 
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
+    function speakFallback(text) {
+      if (!('speechSynthesis' in window)) return;
+      if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ru-RU';
+      utterance.rate = 0.82;
+      utterance.pitch = 0.55;
+      utterance.volume = 1;
+      const voices = speechSynthesis.getVoices();
+      const ruVoice = voices.find(v => v.lang.startsWith('ru'));
+      if (ruVoice) utterance.voice = ruVoice;
+      utterance.onstart = () => {
+        statusIcon.classList.add('speaking');
+        statusLabel.textContent = '🗣️ Джарвис говорит...';
+        statusSub.textContent = 'Озвучивание ответа';
+      };
+      utterance.onend = () => {
+        statusIcon.classList.remove('speaking');
+        if (!isListening) {
+          statusLabel.textContent = 'Нажмите на микрофон';
+          statusSub.textContent = 'Говорите, и я отвечу голосом';
+        }
+      };
+      utterance.onerror = () => {
+        statusIcon.classList.remove('speaking');
+        if (!isListening) {
+          statusLabel.textContent = 'Нажмите на микрофон';
+          statusSub.textContent = 'Говорите, и я отвечу голосом';
+        }
+      };
+      window.speechSynthesis.speak(utterance);
+      currentUtterance = utterance;
     }
 
-    // ---------- Админка ----------
-    function updateAdminPanel() {
-      const totalUsers = Object.keys(stats.users).length;
-      let totalMessages = 0, totalChats = 0;
-      Object.values(stats.users).forEach(u => {
-        totalMessages += u.messageCount || 0;
-        totalChats += u.chatCount || 0;
-      });
-      adminStats.innerHTML = `
-        <div class="stats-grid">
-          <div class="stat-card"><div class="num">${totalUsers}</div><div class="label">Пользователей</div></div>
-          <div class="stat-card"><div class="num">${totalMessages}</div><div class="label">Сообщений</div></div>
-          <div class="stat-card"><div class="num">${totalChats}</div><div class="label">Чатов создано</div></div>
-        </div>
-      `;
-    }
-    exportStatsBtn.addEventListener('click', function() {
-      const data = { exportedAt: new Date().toISOString(), stats, chats, config };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `jarvis_stats_${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      addSystemMessage('📥 Статистика скачана.');
+    // ---------- Events ----------
+    micBtn.addEventListener('click', function() {
+      if (isProcessing) return;
+      if (isListening) {
+        stopListening();
+      } else {
+        if (!recognition) initRecognition();
+        startListening();
+      }
     });
-    closeAdminBtn.addEventListener('click', () => adminPanel.classList.remove('active'));
-    adminPanel.addEventListener('click', (e) => { if (e.target === adminPanel) adminPanel.classList.remove('active'); });
 
-    // ---------- Остальные события ----------
-    newChatBtn.addEventListener('click', createNewChat);
-    chatTitleInput.addEventListener('change', function() {
-      const newName = this.value.trim();
-      if (!newName) return;
-      const chat = chats.find(c => c.id === currentChatId);
-      if (chat) { chat.name = newName; saveChats(); renderChatList(); }
+    clearBtn.addEventListener('click', function() {
+      if (confirm('Очистить весь диалог?')) {
+        clearTranscript();
+        statusSub.textContent = 'Диалог очищен';
+        setTimeout(() => {
+          statusSub.textContent = 'Говорите, и я отвечу голосом';
+        }, 1500);
+      }
     });
-    sendBtn.addEventListener('click', () => handleSend(textInput.value, false));
-    textInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(textInput.value, false); }
+
+    resetBtn.addEventListener('click', function() {
+      clearTranscript();
+      statusSub.textContent = 'Диалог сброшен';
+      setTimeout(() => {
+        statusSub.textContent = 'Говорите, и я отвечу голосом';
+      }, 1500);
     });
 
     settingsBtn.addEventListener('click', () => {
-      providerSelect.value = config.provider;
-      systemPromptInput.value = config.systemPrompt || '';
-      empathyMode.checked = config.empathy;
-      deepAnalysis.checked = config.deep;
-      creativeMode.checked = config.creative;
-      selfLearn.checked = config.selfLearn;
-      sourceCheck.checked = config.sourceCheck;
-      showLineNumbers.checked = config.showLineNumbers;
-      temperatureRange.value = Math.round(config.temperature * 100);
-      tempValue.textContent = config.temperature.toFixed(1);
-      knowledgeDomain.value = config.knowledge;
-      themeSelect.value = config.theme || 'dark';
-      langSelect.value = config.lang || 'ru';
-      codeHelper.checked = config.codeHelper || false;
-      webSearch.checked = config.webSearch || false;
-      voiceCommands.checked = config.voiceCommands || false;
-      pluginWeather.checked = config.pluginWeather || false;
-      pluginCalendar.checked = config.pluginCalendar || false;
-      pluginNews.checked = config.pluginNews || false;
-      updateModelOptions();
-      modelSelect.value = config.model || '';
-      populateVoiceList();
-      if (config.voiceURI) voiceSelect.value = config.voiceURI;
+      modal.classList.add('active');
+    });
+    settingsMicBtn.addEventListener('click', () => {
       modal.classList.add('active');
     });
     modalClose.addEventListener('click', () => modal.classList.remove('active'));
     modalSave.addEventListener('click', () => {
       saveConfig();
       modal.classList.remove('active');
-      addSystemMessage('⚙️ Настройки сохранены.');
+      statusSub.textContent = 'Настройки сохранены';
+      setTimeout(() => {
+        statusSub.textContent = 'Говорите, и я отвечу голосом';
+      }, 1500);
     });
-    providerSelect.addEventListener('change', () => { updateModelOptions(); });
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+    providerSelect.addEventListener('change', () => {
+      updateModelOptions();
+    });
     temperatureRange.addEventListener('input', function() {
       const val = (this.value / 100).toFixed(1);
       tempValue.textContent = val;
     });
-
-    clearBtn.addEventListener('click', clearChat);
-    attachBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        pendingImage = event.target.result;
-        attachBtn.classList.add('has-attachment');
-        addSystemMessage(`📎 Изображение прикреплено (${file.name})`);
-        const imgHtml = `<div style="max-width:200px; border-radius:12px; overflow:hidden; margin:4px 0;"><img src="${pendingImage}" style="width:100%; display:block;" /></div>`;
-        addMessage('user', imgHtml, true);
-        fileInput.value = '';
-      };
-      reader.readAsDataURL(file);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.remove('active');
     });
 
-    stopBtn.addEventListener('click', function() {
-      if (abortController) {
-        abortController.abort();
-        abortController = null;
-        isGenerating = false;
-        hideThinking();
-        document.querySelector('.avatar')?.classList.remove('pulse');
-        stopBtn.style.display = 'none';
-        sendBtn.style.display = 'flex';
-        addSystemMessage('⏹ Генерация остановлена.');
-      }
-    });
-
-    // Меню пользователя (аватар)
-    userInfo.addEventListener('click', function() {
-      if (confirm('Выйти из аккаунта?')) {
-        localStorage.removeItem('jarvis_auth');
-        localStorage.removeItem('jarvis_user');
-        localStorage.removeItem('jarvis_chats');
-        localStorage.removeItem('jarvis_config');
-        location.reload();
-      }
-    });
-
-    // Авторизация (упрощённо)
-    let generatedCode = '';
-    async function sendVerificationCode(email) {
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      generatedCode = code;
-      authMessage.textContent = `🔑 Тестовый код: ${code} (также в консоли)`;
-      authMessage.style.color = '#6bff6b';
-      console.log(`📧 Код для ${email}: ${code}`);
-      return true;
-    }
-    sendCodeBtn.addEventListener('click', async function() {
-      const email = authEmail.value.trim();
-      if (!email || !email.includes('@')) { authMessage.textContent = '❌ Введите корректный email.'; authMessage.style.color = '#ff6b6b'; return; }
-      authMessage.textContent = '⏳ Отправка...';
-      authMessage.style.color = '#b0c4ff';
-      await sendVerificationCode(email);
-    });
-    confirmBtn.addEventListener('click', function() {
-      const code = authCode.value.trim();
-      if (!code) { authMessage.textContent = '❌ Введите код.'; authMessage.style.color = '#ff6b6b'; return; }
-      if (code === generatedCode) {
-        userEmail = authEmail.value.trim();
-        userName = userEmail.split('@')[0] || 'Пользователь';
-        userNameDisplay.textContent = userName;
-        userEmailDisplay.textContent = userEmail;
-        userAvatar.textContent = userName.charAt(0).toUpperCase();
-        authOverlay.classList.add('hidden');
-        localStorage.setItem('jarvis_auth', 'true');
-        localStorage.setItem('jarvis_user', JSON.stringify({ email: userEmail, name: userName }));
-        loadStats();
-        loadChats();
-        addSystemMessage(`👋 Привет, ${userName}! Я Джарвис. Чем могу помочь, сер?`);
-      } else {
-        authMessage.textContent = '❌ Неверный код. Попробуйте ещё раз.';
-        authMessage.style.color = '#ff6b6b';
-      }
-    });
-    function checkSession() {
-      const auth = localStorage.getItem('jarvis_auth');
-      if (auth === 'true') {
-        const userData = localStorage.getItem('jarvis_user');
-        if (userData) {
-          try {
-            const parsed = JSON.parse(userData);
-            userEmail = parsed.email || '';
-            userName = parsed.name || 'Пользователь';
-          } catch(e) {}
-        }
-        userNameDisplay.textContent = userName;
-        userEmailDisplay.textContent = userEmail;
-        userAvatar.textContent = userName.charAt(0).toUpperCase();
-        authOverlay.classList.add('hidden');
-        loadStats();
-        loadChats();
-        addSystemMessage(`👋 Привет, ${userName}! Я Джарвис. Чем могу помочь, сер?`);
-      } else {
-        authOverlay.classList.remove('hidden');
-      }
-    }
-
-    function loadStats() {
-      try { const saved = localStorage.getItem('jarvis_stats'); if (saved) stats = JSON.parse(saved); else stats = { users: {} }; } catch(e) { stats = { users: {} }; }
-    }
-    function saveStats() { localStorage.setItem('jarvis_stats', JSON.stringify(stats)); }
-    function updateUserStats(email, name) {
-      if (!email) return;
-      if (!stats.users[email]) {
-        stats.users[email] = { name: name || email.split('@')[0] || 'Пользователь', firstSeen: new Date().toISOString(), messageCount: 0, chatCount: 0 };
-      } else if (name) stats.users[email].name = name;
-      saveStats();
-    }
-
-    function toggleSidebar() { sidebar.classList.toggle('open'); sidebarOverlay.classList.toggle('active'); }
-    function closeSidebar() { sidebar.classList.remove('open'); sidebarOverlay.classList.remove('active'); }
-    menuToggle.addEventListener('click', toggleSidebar);
-    sidebarOverlay.addEventListener('click', closeSidebar);
-
-    // Инициализация
+    // ---------- Init ----------
     loadConfig();
-    setTimeout(populateVoiceList, 600);
-    checkSession();
+    updateModelOptions();
+    initRecognition();
 
-    // При загрузке голоса для ElevenLabs подгружаем список голосов (но они уже есть в populateVoiceList)
-    // Если ElevenLabs ключ невалиден, используем fallback.
+    // Приветственное сообщение
+    addTranscript('jarvis', 'Здравствуйте, сер. Я Джарвис. Нажмите на микрофон и задайте вопрос.');
+
+    // Подгружаем голоса для fallback
+    if (speechSynthesis) {
+      speechSynthesis.onvoiceschanged = () => {};
+    }
 
   })();
 </script>
