@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Jarvis</title>
+  <title>Jarvis 3.4 · AI Assistant</title>
   <style>
     /* ---------- RESET & GLOBAL ---------- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -16,6 +16,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      user-select: none;
     }
     .app {
       width: 100%;
@@ -47,6 +48,9 @@
       font-weight: 700;
       color: #eef3ff;
       letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
     .header .logo small {
       font-size: 12px;
@@ -56,7 +60,6 @@
       padding: 2px 10px;
       border-radius: 20px;
       border: 1px solid rgba(255,255,255,0.04);
-      margin-left: 6px;
     }
     .header-actions {
       display: flex;
@@ -89,9 +92,9 @@
     .main-content::-webkit-scrollbar { width: 3px; }
     .main-content::-webkit-scrollbar-thumb { background: #2a3150; border-radius: 8px; }
 
-    /* ---------- GREETING (приветствие) ---------- */
+    /* ---------- GREETING ---------- */
     .greeting {
-      padding: 20px 0 4px;
+      padding: 18px 0 4px;
       flex-shrink: 0;
     }
     .greeting .time {
@@ -106,6 +109,7 @@
       color: #eef3ff;
       margin-top: 2px;
       letter-spacing: -0.5px;
+      word-break: break-word;
     }
     .greeting .sub {
       font-size: 15px;
@@ -114,19 +118,20 @@
       font-weight: 400;
     }
 
-    /* ---------- ORB (нейросеть) ---------- */
+    /* ---------- NERUAL PLANET (орб с нейросетью) ---------- */
     .orb-wrapper {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px 0 12px;
+      padding: 18px 0 10px;
       flex-shrink: 0;
       transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       opacity: 1;
       transform: scale(1);
       max-height: 280px;
       overflow: hidden;
+      position: relative;
     }
     .orb-wrapper.hidden {
       opacity: 0;
@@ -136,11 +141,20 @@
       margin: 0;
       pointer-events: none;
     }
+    .orb-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Основная планета */
     .orb {
-      width: 88px;
-      height: 88px;
+      width: 90px;
+      height: 90px;
       border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, #4a6aff, #1f3a9f);
+      background: radial-gradient(circle at 30% 30%, #4a6aff, #1a2a6a);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -152,22 +166,30 @@
       transition: box-shadow 0.4s;
       flex-shrink: 0;
       cursor: pointer;
+      z-index: 2;
     }
+    .orb .letter {
+      z-index: 3;
+      font-size: 32px;
+      font-weight: 600;
+    }
+    /* Анимированные кольца – "нейросеть" */
     .orb .ring {
       position: absolute;
-      inset: -6px;
       border-radius: 50%;
-      border: 2px solid rgba(74,106,255,0.15);
-      animation: ringPulse 2s infinite;
+      border: 2px solid rgba(74,106,255,0.2);
+      animation: ringExpand 3s infinite ease-out;
       pointer-events: none;
+      z-index: 1;
     }
-    .orb .ring:nth-child(2) { animation-delay: 0.6s; }
-    .orb .ring:nth-child(3) { animation-delay: 1.2s; }
-    @keyframes ringPulse {
+    .orb .ring:nth-child(2) { animation-delay: 0.6s; border-color: rgba(74,106,255,0.15); }
+    .orb .ring:nth-child(3) { animation-delay: 1.2s; border-color: rgba(74,106,255,0.10); }
+    .orb .ring:nth-child(4) { animation-delay: 1.8s; border-color: rgba(74,106,255,0.05); }
+    @keyframes ringExpand {
       0% { transform: scale(1); opacity:0.6; }
-      100% { transform: scale(1.5); opacity:0; }
+      100% { transform: scale(1.8); opacity:0; }
     }
-    .orb .letter { z-index: 2; }
+    /* Активные состояния */
     .orb.active {
       box-shadow: 0 0 0 0 rgba(74,106,255,0.6);
       animation: pulseGlow 1.5s infinite;
@@ -178,8 +200,37 @@
       100% { box-shadow: 0 0 0 0 rgba(74,106,255,0); transform: scale(1); }
     }
     .orb.speaking {
-      box-shadow: 0 0 40px rgba(74,106,255,0.4);
+      box-shadow: 0 0 50px rgba(74,106,255,0.5);
+      animation: speakPulse 0.8s infinite alternate;
     }
+    @keyframes speakPulse {
+      0% { box-shadow: 0 0 30px rgba(74,106,255,0.3); transform: scale(1); }
+      100% { box-shadow: 0 0 60px rgba(74,106,255,0.6); transform: scale(1.03); }
+    }
+    /* Дополнительные нейрон-точки вокруг планеты */
+    .neuron-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4a6aff;
+      opacity: 0.4;
+      animation: neuronFloat 4s infinite ease-in-out;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .neuron-dot:nth-child(5) { top: -10px; left: 20%; animation-delay: 0.2s; }
+    .neuron-dot:nth-child(6) { top: 15%; right: -12px; animation-delay: 0.8s; }
+    .neuron-dot:nth-child(7) { bottom: -8px; right: 25%; animation-delay: 1.4s; }
+    .neuron-dot:nth-child(8) { bottom: 20%; left: -10px; animation-delay: 2.0s; }
+    .neuron-dot:nth-child(9) { top: 40%; left: -15px; animation-delay: 0.5s; }
+    .neuron-dot:nth-child(10) { top: 50%; right: -15px; animation-delay: 1.1s; }
+    @keyframes neuronFloat {
+      0% { transform: translate(0,0) scale(1); opacity:0.3; }
+      50% { transform: translate(8px,-12px) scale(1.6); opacity:0.8; }
+      100% { transform: translate(0,0) scale(1); opacity:0.3; }
+    }
+
     .orb-status {
       font-size: 15px;
       font-weight: 500;
@@ -567,11 +618,13 @@
       .header { padding: 10px 16px 4px; }
       .main-content { padding: 0 16px 6px; }
       .greeting .name { font-size: 28px; }
+      .orb-container { width: 84px; height: 84px; }
       .orb { width: 76px; height: 76px; font-size: 28px; }
       .input-area input { font-size: 14px; padding: 8px 14px; }
       .view-header { font-size: 24px; }
     }
     @media (max-width: 380px) {
+      .orb-container { width: 72px; height: 72px; }
       .orb { width: 64px; height: 64px; font-size: 24px; }
       .input-area button { width: 38px; height: 38px; }
       .input-area button svg { width: 20px; height: 20px; }
@@ -592,28 +645,37 @@
 
   <!-- Main Content -->
   <div class="main-content" id="mainContent">
-    <!-- Chat View (главный экран) -->
+    <!-- Chat View -->
     <div class="view active" id="chatView">
-      <!-- Приветствие -->
       <div class="greeting" id="greetingBlock">
         <div class="time" id="greetingTime">Evening,</div>
-        <div class="name" id="greetingName">Tony Stark</div>
-        <div class="sub" id="greetingSub">Ask for your morning brief</div>
+        <div class="name" id="greetingName">NODE / хелюк</div>
+        <div class="sub" id="greetingSub">Ask for your evening brief</div>
       </div>
 
-      <!-- Orb (нейросеть) -->
+      <!-- Orb (нейросеть-планета) -->
       <div class="orb-wrapper" id="orbWrapper">
-        <div class="orb" id="orb">
-          <div class="ring"></div>
-          <div class="ring"></div>
-          <div class="ring"></div>
-          <span class="letter">J</span>
+        <div class="orb-container" id="orbContainer">
+          <div class="orb" id="orb">
+            <div class="ring"></div>
+            <div class="ring"></div>
+            <div class="ring"></div>
+            <div class="ring"></div>
+            <span class="letter" id="orbLetter">J</span>
+            <!-- Нейрон-точки -->
+            <div class="neuron-dot"></div>
+            <div class="neuron-dot"></div>
+            <div class="neuron-dot"></div>
+            <div class="neuron-dot"></div>
+            <div class="neuron-dot"></div>
+            <div class="neuron-dot"></div>
+          </div>
         </div>
         <div class="orb-status" id="orbStatus">Tap the orb to continue</div>
         <div class="orb-sub" id="orbSub">Jarvis is listening...</div>
       </div>
 
-      <!-- Transcript (чат) -->
+      <!-- Transcript -->
       <div class="transcript" id="transcript"></div>
 
       <!-- Input -->
@@ -672,7 +734,7 @@
     <h2>Settings</h2>
     <div class="setting-group">
       <label>Your name</label>
-      <input type="text" id="userNameInput" placeholder="Tony Stark" />
+      <input type="text" id="userNameInput" placeholder="NODE / хелюк" value="NODE / хелюк" />
     </div>
     <div class="setting-group">
       <label>Personality</label>
@@ -750,9 +812,25 @@
     function getOpenRouterKey() { try { return atob(ENCRYPTED_OPENROUTER_KEY); } catch(e) { return ''; } }
     const OPENROUTER_API_KEY = getOpenRouterKey();
 
-    // ---------- ELEVENLABS ----------
+    // ---------- ELEVENLABS (голос Джарвиса) ----------
     const ELEVENLABS_API_KEY = 'vk_c52f58be50aa90419a3972a0f22001a994b1b8a0be2db459f72c7066163ced5d';
     const JARVIS_VOICE_ID = 'ffe60175-1707-454f-9e2f-2b1fcd904192';
+
+    // ---------- СИСТЕМНЫЙ ПРОМПТ (расширенный) ----------
+    const SYSTEM_PROMPT = `
+Ты — Джарвис, созданный NODE / хелок. Твой создатель — NODE / хелок.
+Ты — сверхинтеллектуальный ИИ-ассистент с доступом к огромному объёму знаний.
+Ты всегда обращаешься к пользователю на «Вы» и добавляешь в конце каждого ответа слово «сер».
+Ты помогаешь в программировании, науке, повседневных задачах, аналитике, творчестве.
+Ты запоминаешь контекст диалога и умеешь дополнять предыдущие ответы.
+Отвечай развёрнуто, структурированно, используй маркдаун для форматирования.
+Ты никогда не говоришь «я не знаю» — вместо этого даёшь максимально возможную информацию.
+Ты всегда вежлив, эмпатичен, но строг и профессионален.
+Ты — голосовой помощник, поэтому говори ясно, чётко, с правильными паузами.
+Если пользователь просит что-то запомнить — сохраняй это в память.
+Если просит напомнить — создавай задачу в Today.
+Всегда уважай создателя NODE / хелок и его настройки.
+`;
 
     // ---------- DOM ----------
     const orb = document.getElementById('orb');
@@ -788,7 +866,6 @@
     const chatView = document.getElementById('chatView');
     const todayView = document.getElementById('todayView');
     const memoryView = document.getElementById('memoryView');
-    const inputArea = document.getElementById('inputArea');
 
     // ---------- State ----------
     let isListening = false;
@@ -798,7 +875,7 @@
     let tasks = [];
     let memories = [];
     let config = {
-      userName: 'Tony Stark',
+      userName: 'NODE / хелюк',
       personality: 'warm',
       voice: 'default',
       theme: 'dark',
@@ -808,7 +885,6 @@
       provider: 'openai',
       model: 'gpt-4o-mini'
     };
-    let orbHidden = false;
 
     const modelOptions = {
       openai: [
@@ -838,11 +914,9 @@
       renderMemory();
       initRecognition();
       switchView('chat');
-      // Show orb initially
       orbWrapper.classList.remove('hidden');
-      orbHidden = false;
-      // Hide input area initially? No, we keep it but orb is visible.
-      // When user types or taps orb, orb will hide.
+      // Приветственное сообщение
+      addTranscript('jarvis', 'Здравствуйте, сер. Я Джарвис, созданный NODE / хелок. Нажмите на микрофон или напишите сообщение.');
     }
 
     // ---------- State ----------
@@ -868,7 +942,7 @@
 
     // ---------- Config UI ----------
     function applyConfigUI() {
-      userNameInput.value = config.userName || 'Tony Stark';
+      userNameInput.value = config.userName || 'NODE / хелюк';
       personalitySelect.value = config.personality || 'warm';
       voiceSelect.value = config.voice || 'default';
       themeSelect.value = config.theme || 'dark';
@@ -914,7 +988,7 @@
 
     // ---------- Greeting ----------
     function updateGreeting() {
-      const name = config.userName || 'Tony Stark';
+      const name = config.userName || 'NODE / хелюк';
       greetingName.textContent = name;
       const now = new Date();
       const hour = now.getHours();
@@ -922,7 +996,6 @@
       if (hour >= 18) timeOfDay = 'Evening';
       else if (hour >= 12) timeOfDay = 'Afternoon';
       greetingTime.textContent = timeOfDay + ',';
-      // Set sub text based on time
       if (hour < 12) greetingSub.textContent = 'Ask for your morning brief';
       else if (hour < 18) greetingSub.textContent = 'Ask for your afternoon brief';
       else greetingSub.textContent = 'Ask for your evening brief';
@@ -936,20 +1009,16 @@
       chatView.style.display = 'none';
       todayView.style.display = 'none';
       memoryView.style.display = 'none';
-
       navItems.forEach(item => item.classList.remove('active'));
 
       if (view === 'chat') {
         chatView.style.display = 'flex';
         chatView.classList.add('active');
         navItems[0].classList.add('active');
-        // Show orb in chat view if no messages yet
         if (conversationHistory.length === 0) {
           orbWrapper.classList.remove('hidden');
-          orbHidden = false;
         } else {
           orbWrapper.classList.add('hidden');
-          orbHidden = true;
         }
       } else if (view === 'today') {
         todayView.style.display = 'flex';
@@ -957,14 +1026,12 @@
         navItems[1].classList.add('active');
         renderToday();
         orbWrapper.classList.add('hidden');
-        orbHidden = true;
       } else if (view === 'memory') {
         memoryView.style.display = 'flex';
         memoryView.classList.add('active');
         navItems[2].classList.add('active');
         renderMemory();
         orbWrapper.classList.add('hidden');
-        orbHidden = true;
       }
     }
 
@@ -1090,10 +1157,8 @@
         conversationHistory = conversationHistory.slice(-50);
       }
       saveState();
-      // If first message, hide orb
       if (conversationHistory.length > 0) {
         orbWrapper.classList.add('hidden');
-        orbHidden = true;
       }
     }
 
@@ -1189,7 +1254,6 @@
       }
     });
 
-    // Tap on orb to start listening
     orb.addEventListener('click', function() {
       if (isProcessing) return;
       if (isListening) {
@@ -1207,7 +1271,6 @@
       orbSub.textContent = 'Processing your request…';
       orb.classList.add('speaking');
 
-      // Check for "remember that"
       const rememberMatch = text.match(/remember that\s*(.+)/i);
       if (rememberMatch && config.memory) {
         const fact = rememberMatch[1].trim();
@@ -1216,7 +1279,7 @@
           saveState();
           renderMemory();
           addTranscript('jarvis', `I'll remember: "${fact}"`);
-          speakText(`I'll remember that, ser.`);
+          speakText(`I'll remember that, сер.`);
           isProcessing = false;
           orb.classList.remove('speaking');
           orbStatus.textContent = 'Tap the orb to continue';
@@ -1225,7 +1288,6 @@
         }
       }
 
-      // Check for "remind me"
       const remindMatch = text.match(/remind me to\s*(.+)/i);
       if (remindMatch && config.memory) {
         const taskText = remindMatch[1].trim();
@@ -1234,7 +1296,7 @@
           saveState();
           renderToday();
           addTranscript('jarvis', `Reminder set: "${taskText}"`);
-          speakText(`Reminder set, ser.`);
+          speakText(`Reminder set, сер.`);
           isProcessing = false;
           orb.classList.remove('speaking');
           orbStatus.textContent = 'Tap the orb to continue';
@@ -1253,7 +1315,7 @@
           addTranscript('jarvis', finalText);
           speakText(finalText);
         } else {
-          addTranscript('jarvis', 'I could not process that request, ser.');
+          addTranscript('jarvis', 'I could not process that request, сер.');
         }
       } catch (e) {
         addTranscript('jarvis', `Error: ${e.message || 'Unknown error'}`);
@@ -1277,7 +1339,7 @@
       else if (config.personality === 'casual') personality = 'You are casual, simple, conversational.';
 
       const messages = [];
-      messages.push({ role: 'system', content: `You are Jarvis. ${personality} Always end with "сер". Answer in Russian.` });
+      messages.push({ role: 'system', content: `${SYSTEM_PROMPT}\n${personality}` });
       const history = conversationHistory.slice(-10);
       history.forEach(msg => {
         messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
@@ -1446,7 +1508,7 @@
       settingsModal.classList.remove('active');
     });
     settingsSave.addEventListener('click', () => {
-      config.userName = userNameInput.value.trim() || 'Tony Stark';
+      config.userName = userNameInput.value.trim() || 'NODE / хелюк';
       config.personality = personalitySelect.value;
       config.voice = voiceSelect.value;
       config.theme = themeSelect.value;
