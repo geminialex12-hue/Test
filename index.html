@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Jarvis · Голосовой помощник</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Jarvis · AI Assistant</title>
   <style>
     /* ---------- RESET & GLOBAL ---------- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: #080b12;
+      background: #0a0c14;
       font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
       height: 100vh;
       overflow: hidden;
@@ -38,7 +38,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px 12px;
+      padding: 14px 20px 10px;
       flex-shrink: 0;
       border-bottom: 1px solid rgba(255,255,255,0.04);
     }
@@ -49,18 +49,22 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .header .logo small {
-      font-size: 12px;
+      font-size: 11px;
       -webkit-text-fill-color: #6a7ba8;
       background: rgba(255,255,255,0.04);
-      padding: 2px 10px;
+      padding: 2px 8px;
       border-radius: 20px;
       border: 1px solid rgba(255,255,255,0.04);
+      font-weight: 400;
     }
     .header-actions {
       display: flex;
-      gap: 6px;
+      gap: 4px;
     }
     .header-actions button {
       background: rgba(255,255,255,0.04);
@@ -76,31 +80,44 @@
       transition: 0.2s;
     }
     .header-actions button:hover { background: rgba(255,255,255,0.08); }
+    .header-actions button svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
     /* ---------- MAIN CONTENT ---------- */
     .main-content {
       flex: 1;
       overflow-y: auto;
-      padding: 8px 20px 12px;
+      padding: 6px 20px 8px;
       display: flex;
       flex-direction: column;
     }
     .main-content::-webkit-scrollbar { width: 3px; }
     .main-content::-webkit-scrollbar-thumb { background: #2a3150; border-radius: 8px; }
 
-    /* ---------- CHAT VIEW ---------- */
-    .chat-view { display: flex; flex-direction: column; height: 100%; }
-    .chat-view .status-area {
+    /* ---------- ORB (нейросеть) ---------- */
+    .orb-wrapper {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px 0 12px;
+      padding: 18px 0 12px;
       flex-shrink: 0;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 1;
+      transform: scale(1);
+      max-height: 200px;
+      overflow: hidden;
     }
-    .chat-view .orb {
-      width: 80px;
-      height: 80px;
+    .orb-wrapper.hidden {
+      opacity: 0;
+      transform: scale(0.6);
+      max-height: 0;
+      padding: 0;
+      margin: 0;
+      pointer-events: none;
+    }
+    .orb {
+      width: 84px;
+      height: 84px;
       border-radius: 50%;
       background: radial-gradient(circle at 30% 30%, #4a6aff, #1f3a9f);
       display: flex;
@@ -109,12 +126,12 @@
       font-size: 32px;
       font-weight: 600;
       color: #fff;
-      box-shadow: 0 8px 32px rgba(74,106,255,0.25);
-      transition: box-shadow 0.4s, transform 0.3s;
+      box-shadow: 0 8px 32px rgba(74,106,255,0.2);
       position: relative;
-      margin-bottom: 12px;
+      transition: box-shadow 0.4s;
+      flex-shrink: 0;
     }
-    .chat-view .orb .pulse-ring {
+    .orb .ring {
       position: absolute;
       inset: -6px;
       border-radius: 50%;
@@ -122,13 +139,14 @@
       animation: ringPulse 2s infinite;
       pointer-events: none;
     }
-    .chat-view .orb .pulse-ring:nth-child(2) { animation-delay: 0.6s; }
-    .chat-view .orb .pulse-ring:nth-child(3) { animation-delay: 1.2s; }
+    .orb .ring:nth-child(2) { animation-delay: 0.6s; }
+    .orb .ring:nth-child(3) { animation-delay: 1.2s; }
     @keyframes ringPulse {
       0% { transform: scale(1); opacity:0.6; }
       100% { transform: scale(1.5); opacity:0; }
     }
-    .chat-view .orb.listening {
+    .orb .letter { z-index: 2; }
+    .orb.active {
       box-shadow: 0 0 0 0 rgba(74,106,255,0.6);
       animation: pulseGlow 1.5s infinite;
     }
@@ -137,25 +155,26 @@
       50% { box-shadow: 0 0 0 30px rgba(74,106,255,0); transform: scale(1.04); }
       100% { box-shadow: 0 0 0 0 rgba(74,106,255,0); transform: scale(1); }
     }
-    .chat-view .orb.speaking {
+    .orb.speaking {
       box-shadow: 0 0 40px rgba(74,106,255,0.4);
     }
-    .chat-view .orb .letter { z-index: 2; }
-    .chat-view .status-text {
-      font-size: 16px;
+    .orb-status {
+      font-size: 15px;
       font-weight: 500;
       color: #b0c4ff;
-      margin-bottom: 2px;
+      margin-top: 10px;
+      transition: 0.3s;
     }
-    .chat-view .status-sub {
+    .orb-sub {
       font-size: 13px;
       color: #6a7ba8;
       text-align: center;
       max-width: 280px;
       line-height: 1.4;
+      margin-top: 2px;
     }
 
-    /* Transcript */
+    /* ---------- TRANSCRIPT (чат) ---------- */
     .transcript {
       flex: 1;
       overflow-y: auto;
@@ -188,16 +207,23 @@
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.04);
     }
-    .transcript-item .icon { font-size: 18px; flex-shrink: 0; width: 28px; text-align: center; }
+    .transcript-item .icon {
+      flex-shrink: 0;
+      width: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .transcript-item .icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .transcript-item .text { flex: 1; word-break: break-word; }
     .transcript-item .time { font-size: 11px; color: #5a6a8a; flex-shrink: 0; margin-left: 8px; align-self: center; }
 
-    /* Input area */
+    /* ---------- INPUT AREA ---------- */
     .input-area {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 0 4px;
+      padding: 6px 0 4px;
       border-top: 1px solid rgba(255,255,255,0.04);
       flex-shrink: 0;
     }
@@ -222,7 +248,6 @@
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      font-size: 22px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -231,43 +256,43 @@
     }
     .input-area button:hover { background: rgba(255,255,255,0.08); }
     .input-area button:active { transform: scale(0.92); }
+    .input-area button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .input-area .mic-btn.listening svg { color: #ff6b6b; }
     .input-area .mic-btn.listening {
-      background: #ff6b6b;
-      color: white;
-      box-shadow: 0 0 20px rgba(255,70,70,0.3);
+      background: rgba(255,70,70,0.15);
       animation: micPulse 1.2s infinite;
     }
     @keyframes micPulse {
-      0% { box-shadow: 0 0 0 0 rgba(255,70,70,0.4); }
-      50% { box-shadow: 0 0 0 20px rgba(255,70,70,0); }
+      0% { box-shadow: 0 0 0 0 rgba(255,70,70,0.3); }
+      50% { box-shadow: 0 0 0 16px rgba(255,70,70,0); }
       100% { box-shadow: 0 0 0 0 rgba(255,70,70,0); }
     }
 
     /* ---------- TODAY VIEW ---------- */
-    .today-view { display: none; flex-direction: column; height: 100%; padding-top: 8px; }
-    .today-view.active { display: flex; }
-    .today-view .today-header {
+    .view { display: none; flex-direction: column; height: 100%; padding-top: 4px; }
+    .view.active { display: flex; }
+    .view-header {
       font-size: 28px;
       font-weight: 700;
       color: #eef3ff;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
-    .today-view .today-date {
+    .view-sub {
       font-size: 14px;
       color: #6a7ba8;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
-    .today-view .today-item {
+    .today-item {
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.04);
-      border-radius: 16px;
-      padding: 14px 16px;
-      margin-bottom: 10px;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
       gap: 12px;
     }
-    .today-view .today-item .check {
+    .today-item .check {
       width: 22px;
       height: 22px;
       border-radius: 50%;
@@ -279,33 +304,34 @@
       cursor: pointer;
       transition: 0.2s;
     }
-    .today-view .today-item .check.done {
+    .today-item .check.done {
       background: #4a6aff;
       border-color: #4a6aff;
     }
-    .today-view .today-item .check.done::after {
-      content: '✓';
-      color: white;
-      font-size: 14px;
-    }
-    .today-view .today-item .task-text {
+    .today-item .check.done svg { stroke: white; }
+    .today-item .task-text {
       flex: 1;
       font-size: 15px;
       color: #eef3ff;
     }
-    .today-view .today-item .task-text.done {
+    .today-item .task-text.done {
       text-decoration: line-through;
       color: #6a7ba8;
     }
-    .today-view .today-item .task-delete {
+    .today-item .task-delete {
       background: none;
       border: none;
       color: #6a7ba8;
-      font-size: 18px;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
     }
-    .today-view .today-item .task-delete:hover { color: #ff6b6b; }
-    .today-view .today-empty {
+    .today-item .task-delete:hover { color: #ff6b6b; }
+    .today-item .task-delete svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+    .empty-state {
       color: #6a7ba8;
       font-size: 15px;
       text-align: center;
@@ -314,15 +340,7 @@
     }
 
     /* ---------- MEMORY VIEW ---------- */
-    .memory-view { display: none; flex-direction: column; height: 100%; padding-top: 8px; }
-    .memory-view.active { display: flex; }
-    .memory-view .memory-header {
-      font-size: 28px;
-      font-weight: 700;
-      color: #eef3ff;
-      margin-bottom: 8px;
-    }
-    .memory-view .memory-search {
+    .memory-search {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 30px;
@@ -331,78 +349,82 @@
       font-size: 15px;
       outline: none;
       width: 100%;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       font-family: inherit;
     }
-    .memory-view .memory-search::placeholder { color: #6a7ba8; }
-    .memory-view .memory-item {
+    .memory-search::placeholder { color: #6a7ba8; }
+    .memory-item {
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.04);
       border-radius: 12px;
-      padding: 12px 16px;
-      margin-bottom: 8px;
+      padding: 10px 14px;
+      margin-bottom: 6px;
       font-size: 15px;
       color: #eef3ff;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .memory-view .memory-item .mem-delete {
+    .memory-item .mem-delete {
       background: none;
       border: none;
       color: #6a7ba8;
-      font-size: 18px;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
     }
-    .memory-view .memory-item .mem-delete:hover { color: #ff6b6b; }
-    .memory-view .memory-empty {
-      color: #6a7ba8;
-      font-size: 15px;
-      text-align: center;
-      padding: 40px 0;
-      line-height: 1.6;
-    }
+    .memory-item .mem-delete:hover { color: #ff6b6b; }
+    .memory-item .mem-delete svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
-    /* ---------- HISTORY VIEW ---------- */
-    .history-view { display: none; flex-direction: column; height: 100%; padding-top: 8px; }
-    .history-view.active { display: flex; }
-    .history-view .history-header {
-      font-size: 28px;
-      font-weight: 700;
-      color: #eef3ff;
-      margin-bottom: 4px;
+    /* ---------- BOTTOM NAV ---------- */
+    .bottom-nav {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 6px 0 10px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      flex-shrink: 0;
+      background: #0b0e16;
     }
-    .history-view .history-sub {
-      font-size: 14px;
+    .bottom-nav .nav-item {
+      background: none;
+      border: none;
       color: #6a7ba8;
-      margin-bottom: 16px;
-    }
-    .history-view .history-item {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.04);
-      border-radius: 12px;
-      padding: 12px 16px;
-      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
       cursor: pointer;
       transition: 0.2s;
+      padding: 4px 12px;
+      font-family: inherit;
+      letter-spacing: 0.3px;
     }
-    .history-view .history-item:hover { background: rgba(255,255,255,0.06); }
-    .history-view .history-item .h-title {
-      font-size: 15px;
-      color: #eef3ff;
-      font-weight: 500;
+    .bottom-nav .nav-item .nav-icon {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .history-view .history-item .h-date {
-      font-size: 12px;
-      color: #6a7ba8;
-      margin-top: 2px;
+    .bottom-nav .nav-item .nav-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
-    .history-view .history-empty {
-      color: #6a7ba8;
-      font-size: 15px;
-      text-align: center;
-      padding: 40px 0;
-      line-height: 1.6;
+    .bottom-nav .nav-item.active {
+      color: #b0c4ff;
+    }
+    .bottom-nav .nav-item.active .nav-icon svg {
+      stroke: #4a6aff;
     }
 
     /* ---------- SETTINGS MODAL ---------- */
@@ -516,49 +538,19 @@
     }
     .settings-modal .settings-actions .btn-secondary:hover { background: rgba(255,255,255,0.1); }
 
-    /* ---------- BOTTOM NAV ---------- */
-    .bottom-nav {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding: 8px 0 12px;
-      border-top: 1px solid rgba(255,255,255,0.04);
-      flex-shrink: 0;
-      background: #0b0e16;
-    }
-    .bottom-nav .nav-item {
-      background: none;
-      border: none;
-      color: #6a7ba8;
-      font-size: 13px;
-      font-weight: 500;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      cursor: pointer;
-      transition: 0.2s;
-      padding: 4px 12px;
-      font-family: inherit;
-    }
-    .bottom-nav .nav-item .nav-icon {
-      font-size: 22px;
-      line-height: 1;
-    }
-    .bottom-nav .nav-item.active {
-      color: #b0c4ff;
-    }
-    .bottom-nav .nav-item.active .nav-icon {
-      color: #4a6aff;
-    }
-
     /* ---------- RESPONSIVE ---------- */
     @media (max-width: 430px) {
       .app { max-height: 100vh; }
-      .header { padding: 12px 16px 8px; }
-      .main-content { padding: 4px 16px 8px; }
-      .chat-view .orb { width: 68px; height: 68px; font-size: 28px; }
+      .header { padding: 10px 16px 6px; }
+      .main-content { padding: 4px 16px 6px; }
+      .orb { width: 72px; height: 72px; font-size: 28px; }
       .input-area input { font-size: 14px; padding: 8px 14px; }
+      .view-header { font-size: 24px; }
+    }
+    @media (max-width: 380px) {
+      .orb { width: 60px; height: 60px; font-size: 24px; }
+      .input-area button { width: 38px; height: 38px; }
+      .input-area button svg { width: 20px; height: 20px; }
     }
   </style>
 </head>
@@ -568,8 +560,8 @@
   <div class="header">
     <div class="logo">Jarvis <small>3.4</small></div>
     <div class="header-actions">
-      <button id="settingsBtn" aria-label="Настройки">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <button id="settingsBtn" aria-label="Settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
     </div>
   </div>
@@ -577,40 +569,45 @@
   <!-- Main Content -->
   <div class="main-content" id="mainContent">
     <!-- Chat View -->
-    <div class="chat-view" id="chatView">
-      <div class="status-area">
+    <div class="view active" id="chatView">
+      <!-- Orb (нейросеть) -->
+      <div class="orb-wrapper" id="orbWrapper">
         <div class="orb" id="orb">
-          <div class="pulse-ring"></div>
-          <div class="pulse-ring"></div>
-          <div class="pulse-ring"></div>
+          <div class="ring"></div>
+          <div class="ring"></div>
+          <div class="ring"></div>
           <span class="letter">J</span>
         </div>
-        <div class="status-text" id="statusText">Нажмите на микрофон</div>
-        <div class="status-sub" id="statusSub">Говорите, и я отвечу голосом</div>
+        <div class="orb-status" id="orbStatus">Tap the orb to continue</div>
+        <div class="orb-sub" id="orbSub">Jarvis is listening...</div>
       </div>
+
+      <!-- Transcript -->
       <div class="transcript" id="transcript"></div>
+
+      <!-- Input -->
       <div class="input-area">
-        <input type="text" id="textInput" placeholder="Сообщение…" />
-        <button class="mic-btn" id="micBtn" aria-label="Голосовой ввод">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 16c-2.206 0-4-1.794-4-4V6c0-2.206 1.794-4 4-4s4 1.794 4 4v6c0 2.206-1.794 4-4 4zm8-4h-2c0 3.309-2.691 6-6 6s-6-2.691-6-6H4c0 4.072 3.061 7.436 7 7.931V22h2v-2.069c3.939-.495 7-3.858 7-7.931z"/></svg>
+        <input type="text" id="textInput" placeholder="Message…" />
+        <button class="mic-btn" id="micBtn" aria-label="Voice input">
+          <svg viewBox="0 0 24 24"><path d="M12 16c-2.206 0-4-1.794-4-4V6c0-2.206 1.794-4 4-4s4 1.794 4 4v6c0 2.206-1.794 4-4 4zm8-4h-2c0 3.309-2.691 6-6 6s-6-2.691-6-6H4c0 4.072 3.061 7.436 7 7.931V22h2v-2.069c3.939-.495 7-3.858 7-7.931z"/></svg>
         </button>
-        <button id="sendBtn" aria-label="Отправить">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <button id="sendBtn" aria-label="Send">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
     </div>
 
     <!-- Today View -->
-    <div class="today-view" id="todayView">
-      <div class="today-header">Today</div>
-      <div class="today-date" id="todayDate"></div>
+    <div class="view" id="todayView">
+      <div class="view-header">Today</div>
+      <div class="view-sub" id="todayDate"></div>
       <div id="todayList"></div>
     </div>
 
     <!-- Memory View -->
-    <div class="memory-view" id="memoryView">
-      <div class="memory-header">Memory</div>
-      <input class="memory-search" id="memorySearch" placeholder="Search what Jarvis knows..." />
+    <div class="view" id="memoryView">
+      <div class="view-header">Memory</div>
+      <input class="memory-search" id="memorySearch" placeholder="Search what Jarvis knows…" />
       <div id="memoryList"></div>
     </div>
   </div>
@@ -618,15 +615,21 @@
   <!-- Bottom Navigation -->
   <div class="bottom-nav">
     <button class="nav-item active" data-view="chat">
-      <span class="nav-icon">💬</span>
+      <span class="nav-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </span>
       <span>Jarvis</span>
     </button>
     <button class="nav-item" data-view="today">
-      <span class="nav-icon">📅</span>
+      <span class="nav-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </span>
       <span>Today</span>
     </button>
     <button class="nav-item" data-view="memory">
-      <span class="nav-icon">🧠</span>
+      <span class="nav-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+      </span>
       <span>Memory</span>
     </button>
   </div>
@@ -718,8 +721,9 @@
 
     // ---------- DOM ----------
     const orb = document.getElementById('orb');
-    const statusText = document.getElementById('statusText');
-    const statusSub = document.getElementById('statusSub');
+    const orbWrapper = document.getElementById('orbWrapper');
+    const orbStatus = document.getElementById('orbStatus');
+    const orbSub = document.getElementById('orbSub');
     const transcript = document.getElementById('transcript');
     const textInput = document.getElementById('textInput');
     const micBtn = document.getElementById('micBtn');
@@ -737,23 +741,22 @@
     const tempRange = document.getElementById('tempRange');
     const tempValue = document.getElementById('tempValue');
     const memoryEnabled = document.getElementById('memoryEnabled');
-
-    const navItems = document.querySelectorAll('.nav-item');
-    const chatView = document.getElementById('chatView');
-    const todayView = document.getElementById('todayView');
-    const memoryView = document.getElementById('memoryView');
     const todayList = document.getElementById('todayList');
     const todayDate = document.getElementById('todayDate');
     const memoryList = document.getElementById('memoryList');
     const memorySearch = document.getElementById('memorySearch');
+    const navItems = document.querySelectorAll('.nav-item');
+    const chatView = document.getElementById('chatView');
+    const todayView = document.getElementById('todayView');
+    const memoryView = document.getElementById('memoryView');
 
     // ---------- State ----------
     let isListening = false;
     let isProcessing = false;
     let recognition = null;
     let conversationHistory = [];
-    let tasks = []; // { id, text, done }
-    let memories = []; // { id, text }
+    let tasks = [];
+    let memories = [];
     let config = {
       personality: 'warm',
       voice: 'default',
@@ -764,6 +767,7 @@
       provider: 'openai',
       model: 'gpt-4o-mini'
     };
+    let orbHidden = false;
 
     const modelOptions = {
       openai: [
@@ -792,11 +796,13 @@
       renderMemory();
       initRecognition();
       addTranscript('jarvis', 'Здравствуйте, сер. Я Джарвис. Нажмите на микрофон или напишите сообщение.');
-      // Set default view
       switchView('chat');
+      // Show orb initially
+      orbWrapper.classList.remove('hidden');
+      orbHidden = false;
     }
 
-    // ---------- State (localStorage) ----------
+    // ---------- State ----------
     function loadState() {
       try {
         const saved = localStorage.getItem('jarvis_config');
@@ -857,41 +863,50 @@
     }
 
     function applyTheme(theme) {
-      document.body.style.background = theme === 'light' ? '#f0f2f5' : '#080b12';
+      document.body.style.background = theme === 'light' ? '#f0f2f5' : '#0a0c14';
       document.querySelector('.app').style.background = theme === 'light' ? '#ffffff' : '#0b0e16';
-      // можно добавить больше стилей для light, но для простоты оставляем
     }
 
     // ---------- Navigation ----------
     function switchView(view) {
-      chatView.style.display = 'none';
+      chatView.classList.remove('active');
       todayView.classList.remove('active');
-      todayView.style.display = 'none';
       memoryView.classList.remove('active');
+      chatView.style.display = 'none';
+      todayView.style.display = 'none';
       memoryView.style.display = 'none';
 
       navItems.forEach(item => item.classList.remove('active'));
 
       if (view === 'chat') {
         chatView.style.display = 'flex';
+        chatView.classList.add('active');
         navItems[0].classList.add('active');
+        // Show orb in chat view
+        orbWrapper.classList.remove('hidden');
+        orbHidden = false;
       } else if (view === 'today') {
         todayView.style.display = 'flex';
         todayView.classList.add('active');
         navItems[1].classList.add('active');
         renderToday();
+        // Hide orb in today/memory
+        orbWrapper.classList.add('hidden');
+        orbHidden = true;
       } else if (view === 'memory') {
         memoryView.style.display = 'flex';
         memoryView.classList.add('active');
         navItems[2].classList.add('active');
         renderMemory();
+        orbWrapper.classList.add('hidden');
+        orbHidden = true;
       }
     }
 
-    navItems.forEach((item, idx) => {
+    navItems.forEach((item) => {
       item.addEventListener('click', () => {
-        const views = ['chat', 'today', 'memory'];
-        switchView(views[idx]);
+        const view = item.dataset.view;
+        switchView(view);
       });
     });
 
@@ -906,7 +921,7 @@
       todayList.innerHTML = '';
       if (tasks.length === 0) {
         todayList.innerHTML = `
-          <div class="today-empty">
+          <div class="empty-state">
             Your to-dos and reminders show up here.<br>
             Just say it while talking — "remind me to send Sarah the report" — and Jarvis keeps track of it for you.
           </div>
@@ -923,12 +938,15 @@
           saveState();
           renderToday();
         });
+        if (task.done) {
+          check.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        }
         const text = document.createElement('span');
         text.className = 'task-text' + (task.done ? ' done' : '');
         text.textContent = task.text;
         const del = document.createElement('button');
         del.className = 'task-delete';
-        del.textContent = '✕';
+        del.innerHTML = `<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
         del.addEventListener('click', () => {
           tasks = tasks.filter(t => t.id !== task.id);
           saveState();
@@ -950,8 +968,8 @@
       }
       if (items.length === 0) {
         memoryList.innerHTML = `
-          <div class="memory-empty">
-            Nothing yet. Say "remember that..." in a conversation, or just talk — Jarvis keeps what matters.
+          <div class="empty-state">
+            Nothing yet. Say "remember that…" in a conversation, or just talk — Jarvis keeps what matters.
           </div>
         `;
         return;
@@ -963,7 +981,7 @@
         text.textContent = mem.text;
         const del = document.createElement('button');
         del.className = 'mem-delete';
-        del.textContent = '✕';
+        del.innerHTML = `<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
         del.addEventListener('click', () => {
           memories = memories.filter(m => m.id !== mem.id);
           saveState();
@@ -985,7 +1003,11 @@
       div.className = `transcript-item ${role}`;
       const icon = document.createElement('span');
       icon.className = 'icon';
-      icon.textContent = role === 'user' ? '👤' : '🤖';
+      if (role === 'user') {
+        icon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+      } else {
+        icon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/></svg>`;
+      }
       const textSpan = document.createElement('span');
       textSpan.className = 'text';
       textSpan.textContent = text;
@@ -1014,7 +1036,7 @@
     // ---------- Speech Recognition ----------
     function initRecognition() {
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        statusSub.textContent = 'Голосовой ввод не поддерживается.';
+        orbSub.textContent = 'Voice input not supported.';
         return false;
       }
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1026,9 +1048,9 @@
       recognition.onstart = function() {
         isListening = true;
         micBtn.classList.add('listening');
-        orb.classList.add('listening');
-        statusText.textContent = '🎤 Слушаю...';
-        statusSub.textContent = 'Говорите, я слушаю';
+        orb.classList.add('active');
+        orbStatus.textContent = 'Listening…';
+        orbSub.textContent = 'Jarvis is listening…';
       };
 
       recognition.onresult = function(e) {
@@ -1044,11 +1066,11 @@
 
       recognition.onerror = function(e) {
         if (e.error === 'not-allowed') {
-          statusSub.textContent = '⚠️ Разрешите доступ к микрофону.';
+          orbSub.textContent = '⚠️ Allow microphone access.';
         } else if (e.error === 'no-speech') {
-          statusSub.textContent = 'Не распознано. Попробуйте ещё раз.';
+          orbSub.textContent = 'No speech detected. Try again.';
         } else {
-          statusSub.textContent = `Ошибка: ${e.error}`;
+          orbSub.textContent = `Error: ${e.error}`;
         }
         stopListening();
       };
@@ -1071,9 +1093,9 @@
     function stopListening() {
       isListening = false;
       micBtn.classList.remove('listening');
-      orb.classList.remove('listening');
-      statusText.textContent = 'Нажмите на микрофон';
-      statusSub.textContent = 'Говорите, и я отвечу голосом';
+      orb.classList.remove('active');
+      orbStatus.textContent = 'Tap the orb to continue';
+      orbSub.textContent = 'Jarvis is listening…';
       if (recognition) { try { recognition.stop(); } catch(e) {} }
     }
 
@@ -1092,6 +1114,9 @@
       if (text) {
         addTranscript('user', text);
         textInput.value = '';
+        // Hide orb when user sends a message
+        orbWrapper.classList.add('hidden');
+        orbHidden = true;
         processUserInput(text);
       }
     });
@@ -1107,11 +1132,11 @@
     async function processUserInput(text) {
       if (isProcessing) return;
       isProcessing = true;
-      statusText.textContent = '⏳ Думаю...';
-      statusSub.textContent = 'Обработка запроса';
+      orbStatus.textContent = 'Thinking…';
+      orbSub.textContent = 'Processing your request…';
       orb.classList.add('speaking');
 
-      // Проверка на "remember that" для Memory
+      // Check for "remember that"
       const rememberMatch = text.match(/remember that\s*(.+)/i);
       if (rememberMatch && config.memory) {
         const fact = rememberMatch[1].trim();
@@ -1119,17 +1144,17 @@
           memories.push({ id: Date.now().toString(36), text: fact });
           saveState();
           renderMemory();
-          addTranscript('jarvis', `Запомнил: "${fact}"`);
-          speakText(`Запомнил, сер.`);
+          addTranscript('jarvis', `I'll remember: "${fact}"`);
+          speakText(`I'll remember that, ser.`);
           isProcessing = false;
           orb.classList.remove('speaking');
-          statusText.textContent = 'Нажмите на микрофон';
-          statusSub.textContent = 'Говорите, и я отвечу голосом';
+          orbStatus.textContent = 'Tap the orb to continue';
+          orbSub.textContent = 'Jarvis is listening…';
           return;
         }
       }
 
-      // Проверка на "remind me" для Today
+      // Check for "remind me"
       const remindMatch = text.match(/remind me to\s*(.+)/i);
       if (remindMatch && config.memory) {
         const taskText = remindMatch[1].trim();
@@ -1137,12 +1162,12 @@
           tasks.push({ id: Date.now().toString(36), text: taskText, done: false });
           saveState();
           renderToday();
-          addTranscript('jarvis', `Напоминание: "${taskText}"`);
-          speakText(`Напоминание установлено, сер.`);
+          addTranscript('jarvis', `Reminder set: "${taskText}"`);
+          speakText(`Reminder set, ser.`);
           isProcessing = false;
           orb.classList.remove('speaking');
-          statusText.textContent = 'Нажмите на микрофон';
-          statusSub.textContent = 'Говорите, и я отвечу голосом';
+          orbStatus.textContent = 'Tap the orb to continue';
+          orbSub.textContent = 'Jarvis is listening…';
           return;
         }
       }
@@ -1157,15 +1182,15 @@
           addTranscript('jarvis', finalText);
           speakText(finalText);
         } else {
-          addTranscript('jarvis', 'Извините, я не смог обработать запрос, сер.');
+          addTranscript('jarvis', 'I could not process that request, ser.');
         }
       } catch (e) {
-        addTranscript('jarvis', `Ошибка: ${e.message || 'Неизвестная ошибка'}`);
+        addTranscript('jarvis', `Error: ${e.message || 'Unknown error'}`);
       } finally {
         isProcessing = false;
         orb.classList.remove('speaking');
-        statusText.textContent = 'Нажмите на микрофон';
-        statusSub.textContent = 'Говорите, и я отвечу голосом';
+        orbStatus.textContent = 'Tap the orb to continue';
+        orbSub.textContent = 'Jarvis is listening…';
       }
     }
 
@@ -1175,14 +1200,13 @@
       const model = config.model;
       const temperature = config.temperature || 0.7;
 
-      // Build personality prompt
       let personality = '';
-      if (config.personality === 'warm') personality = 'Ты — тёплый, дружелюбный, заботливый помощник.';
-      else if (config.personality === 'professional') personality = 'Ты — профессиональный, сдержанный, деловой ассистент.';
-      else if (config.personality === 'casual') personality = 'Ты — неформальный, простой, разговорчивый собеседник.';
+      if (config.personality === 'warm') personality = 'You are warm, friendly, caring.';
+      else if (config.personality === 'professional') personality = 'You are professional, concise, business-like.';
+      else if (config.personality === 'casual') personality = 'You are casual, simple, conversational.';
 
       const messages = [];
-      messages.push({ role: 'system', content: `Ты — Джарвис. ${personality} Всегда добавляй в конце "сер". Отвечай развёрнуто, структурированно.` });
+      messages.push({ role: 'system', content: `You are Jarvis. ${personality} Always end with "сер". Answer in Russian.` });
       const history = conversationHistory.slice(-10);
       history.forEach(msg => {
         messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
@@ -1197,7 +1221,7 @@
       for (const p of providers) {
         try {
           if (p === 'openai') {
-            if (!OPENAI_API_KEY) throw new Error('OpenAI ключ не задан');
+            if (!OPENAI_API_KEY) throw new Error('OpenAI key missing');
             const resp = await fetch('https://api.openai.com/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -1216,10 +1240,10 @@
               throw new Error(`OpenAI error (${resp.status}): ${err}`);
             }
             const data = await resp.json();
-            return data?.choices?.[0]?.message?.content || 'Ответ не получен.';
+            return data?.choices?.[0]?.message?.content || 'No response.';
           }
           else if (p === 'groq') {
-            if (!GROQ_API_KEY) throw new Error('Groq ключ не задан');
+            if (!GROQ_API_KEY) throw new Error('Groq key missing');
             const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -1238,10 +1262,10 @@
               throw new Error(`Groq error (${resp.status}): ${err}`);
             }
             const data = await resp.json();
-            return data?.choices?.[0]?.message?.content || 'Ответ не получен.';
+            return data?.choices?.[0]?.message?.content || 'No response.';
           }
           else if (p === 'openrouter') {
-            if (!OPENROUTER_API_KEY) throw new Error('OpenRouter ключ не найден');
+            if (!OPENROUTER_API_KEY) throw new Error('OpenRouter key missing');
             const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -1262,22 +1286,21 @@
               throw new Error(`OpenRouter error (${resp.status}): ${err}`);
             }
             const data = await resp.json();
-            return data?.choices?.[0]?.message?.content || 'Ответ не получен.';
+            return data?.choices?.[0]?.message?.content || 'No response.';
           }
         } catch (e) {
           lastError = e;
-          console.warn(`Провайдер ${p} не сработал:`, e.message);
+          console.warn(`Provider ${p} failed:`, e.message);
           if (p === providers[providers.length-1]) {
-            throw new Error(`Все провайдеры не отвечают. Последняя ошибка: ${e.message}`);
+            throw new Error(`All providers failed. Last error: ${e.message}`);
           }
         }
       }
-      throw new Error('Неизвестная ошибка при вызове AI.');
+      throw new Error('Unknown AI error.');
     }
 
-    // ---------- Speech Synthesis (ElevenLabs + fallback) ----------
+    // ---------- Speech Synthesis ----------
     async function speakText(text) {
-      // Если есть ключ и голос, используем ElevenLabs
       if (ELEVENLABS_API_KEY && JARVIS_VOICE_ID) {
         try {
           const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${JARVIS_VOICE_ID}`, {
@@ -1302,20 +1325,16 @@
             };
             audio.onplay = () => {
               orb.classList.add('speaking');
-              statusText.textContent = '🗣️ Джарвис говорит...';
-              statusSub.textContent = 'Озвучивание ответа';
+              orbStatus.textContent = 'Speaking…';
+              orbSub.textContent = 'Jarvis is speaking…';
             };
             audio.play();
             return;
-          } else {
-            console.warn('ElevenLabs error, using fallback');
           }
-        } catch(e) {
-          console.warn('ElevenLabs fetch error:', e);
-        }
+        } catch(e) {}
       }
 
-      // Fallback: Web Speech API
+      // Fallback
       if (!('speechSynthesis' in window)) return;
       if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -1328,21 +1347,21 @@
       if (ruVoice) utterance.voice = ruVoice;
       utterance.onstart = () => {
         orb.classList.add('speaking');
-        statusText.textContent = '🗣️ Джарвис говорит...';
-        statusSub.textContent = 'Озвучивание ответа';
+        orbStatus.textContent = 'Speaking…';
+        orbSub.textContent = 'Jarvis is speaking…';
       };
       utterance.onend = () => {
         orb.classList.remove('speaking');
         if (!isListening) {
-          statusText.textContent = 'Нажмите на микрофон';
-          statusSub.textContent = 'Говорите, и я отвечу голосом';
+          orbStatus.textContent = 'Tap the orb to continue';
+          orbSub.textContent = 'Jarvis is listening…';
         }
       };
       utterance.onerror = () => {
         orb.classList.remove('speaking');
         if (!isListening) {
-          statusText.textContent = 'Нажмите на микрофон';
-          statusSub.textContent = 'Говорите, и я отвечу голосом';
+          orbStatus.textContent = 'Tap the orb to continue';
+          orbSub.textContent = 'Jarvis is listening…';
         }
       };
       window.speechSynthesis.speak(utterance);
@@ -1367,9 +1386,9 @@
       saveState();
       applyConfigUI();
       settingsModal.classList.remove('active');
-      statusSub.textContent = 'Настройки сохранены';
+      orbSub.textContent = 'Settings saved';
       setTimeout(() => {
-        statusSub.textContent = 'Говорите, и я отвечу голосом';
+        orbSub.textContent = 'Jarvis is listening…';
       }, 1500);
     });
 
@@ -1387,7 +1406,6 @@
     // ---------- Init ----------
     init();
 
-    // Подгружаем голоса для fallback
     if (speechSynthesis) {
       speechSynthesis.onvoiceschanged = () => {};
     }
