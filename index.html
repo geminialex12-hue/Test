@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Jarvis · AI Assistant</title>
+  <title>Jarvis</title>
   <style>
     /* ---------- RESET & GLOBAL ---------- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: #0a0c14;
+      background: #080b12;
       font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
       height: 100vh;
       overflow: hidden;
@@ -38,29 +38,25 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 20px 10px;
+      padding: 14px 20px 6px;
       flex-shrink: 0;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      border-bottom: none;
     }
     .header .logo {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
-      background: linear-gradient(135deg, #8aa3ff, #4a6aff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.3px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      color: #eef3ff;
+      letter-spacing: -0.2px;
     }
     .header .logo small {
-      font-size: 11px;
-      -webkit-text-fill-color: #6a7ba8;
+      font-size: 12px;
+      font-weight: 400;
+      color: #6a7ba8;
       background: rgba(255,255,255,0.04);
-      padding: 2px 8px;
+      padding: 2px 10px;
       border-radius: 20px;
       border: 1px solid rgba(255,255,255,0.04);
-      font-weight: 400;
+      margin-left: 6px;
     }
     .header-actions {
       display: flex;
@@ -86,12 +82,37 @@
     .main-content {
       flex: 1;
       overflow-y: auto;
-      padding: 6px 20px 8px;
+      padding: 0 20px 8px;
       display: flex;
       flex-direction: column;
     }
     .main-content::-webkit-scrollbar { width: 3px; }
     .main-content::-webkit-scrollbar-thumb { background: #2a3150; border-radius: 8px; }
+
+    /* ---------- GREETING (приветствие) ---------- */
+    .greeting {
+      padding: 20px 0 4px;
+      flex-shrink: 0;
+    }
+    .greeting .time {
+      font-size: 16px;
+      font-weight: 400;
+      color: #b0c4ff;
+      letter-spacing: 0.3px;
+    }
+    .greeting .name {
+      font-size: 32px;
+      font-weight: 700;
+      color: #eef3ff;
+      margin-top: 2px;
+      letter-spacing: -0.5px;
+    }
+    .greeting .sub {
+      font-size: 15px;
+      color: #6a7ba8;
+      margin-top: 6px;
+      font-weight: 400;
+    }
 
     /* ---------- ORB (нейросеть) ---------- */
     .orb-wrapper {
@@ -99,12 +120,12 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 18px 0 12px;
+      padding: 24px 0 12px;
       flex-shrink: 0;
       transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       opacity: 1;
       transform: scale(1);
-      max-height: 200px;
+      max-height: 280px;
       overflow: hidden;
     }
     .orb-wrapper.hidden {
@@ -116,20 +137,21 @@
       pointer-events: none;
     }
     .orb {
-      width: 84px;
-      height: 84px;
+      width: 88px;
+      height: 88px;
       border-radius: 50%;
       background: radial-gradient(circle at 30% 30%, #4a6aff, #1f3a9f);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 32px;
+      font-size: 34px;
       font-weight: 600;
       color: #fff;
       box-shadow: 0 8px 32px rgba(74,106,255,0.2);
       position: relative;
       transition: box-shadow 0.4s;
       flex-shrink: 0;
+      cursor: pointer;
     }
     .orb .ring {
       position: absolute;
@@ -162,8 +184,9 @@
       font-size: 15px;
       font-weight: 500;
       color: #b0c4ff;
-      margin-top: 10px;
+      margin-top: 14px;
       transition: 0.3s;
+      text-align: center;
     }
     .orb-sub {
       font-size: 13px;
@@ -541,14 +564,15 @@
     /* ---------- RESPONSIVE ---------- */
     @media (max-width: 430px) {
       .app { max-height: 100vh; }
-      .header { padding: 10px 16px 6px; }
-      .main-content { padding: 4px 16px 6px; }
-      .orb { width: 72px; height: 72px; font-size: 28px; }
+      .header { padding: 10px 16px 4px; }
+      .main-content { padding: 0 16px 6px; }
+      .greeting .name { font-size: 28px; }
+      .orb { width: 76px; height: 76px; font-size: 28px; }
       .input-area input { font-size: 14px; padding: 8px 14px; }
       .view-header { font-size: 24px; }
     }
     @media (max-width: 380px) {
-      .orb { width: 60px; height: 60px; font-size: 24px; }
+      .orb { width: 64px; height: 64px; font-size: 24px; }
       .input-area button { width: 38px; height: 38px; }
       .input-area button svg { width: 20px; height: 20px; }
     }
@@ -568,8 +592,15 @@
 
   <!-- Main Content -->
   <div class="main-content" id="mainContent">
-    <!-- Chat View -->
+    <!-- Chat View (главный экран) -->
     <div class="view active" id="chatView">
+      <!-- Приветствие -->
+      <div class="greeting" id="greetingBlock">
+        <div class="time" id="greetingTime">Evening,</div>
+        <div class="name" id="greetingName">Tony Stark</div>
+        <div class="sub" id="greetingSub">Ask for your morning brief</div>
+      </div>
+
       <!-- Orb (нейросеть) -->
       <div class="orb-wrapper" id="orbWrapper">
         <div class="orb" id="orb">
@@ -582,11 +613,11 @@
         <div class="orb-sub" id="orbSub">Jarvis is listening...</div>
       </div>
 
-      <!-- Transcript -->
+      <!-- Transcript (чат) -->
       <div class="transcript" id="transcript"></div>
 
       <!-- Input -->
-      <div class="input-area">
+      <div class="input-area" id="inputArea">
         <input type="text" id="textInput" placeholder="Message…" />
         <button class="mic-btn" id="micBtn" aria-label="Voice input">
           <svg viewBox="0 0 24 24"><path d="M12 16c-2.206 0-4-1.794-4-4V6c0-2.206 1.794-4 4-4s4 1.794 4 4v6c0 2.206-1.794 4-4 4zm8-4h-2c0 3.309-2.691 6-6 6s-6-2.691-6-6H4c0 4.072 3.061 7.436 7 7.931V22h2v-2.069c3.939-.495 7-3.858 7-7.931z"/></svg>
@@ -639,6 +670,10 @@
 <div class="settings-overlay" id="settingsModal">
   <div class="settings-modal">
     <h2>Settings</h2>
+    <div class="setting-group">
+      <label>Your name</label>
+      <input type="text" id="userNameInput" placeholder="Tony Stark" />
+    </div>
     <div class="setting-group">
       <label>Personality</label>
       <select id="personalitySelect">
@@ -741,6 +776,10 @@
     const tempRange = document.getElementById('tempRange');
     const tempValue = document.getElementById('tempValue');
     const memoryEnabled = document.getElementById('memoryEnabled');
+    const userNameInput = document.getElementById('userNameInput');
+    const greetingName = document.getElementById('greetingName');
+    const greetingTime = document.getElementById('greetingTime');
+    const greetingSub = document.getElementById('greetingSub');
     const todayList = document.getElementById('todayList');
     const todayDate = document.getElementById('todayDate');
     const memoryList = document.getElementById('memoryList');
@@ -749,6 +788,7 @@
     const chatView = document.getElementById('chatView');
     const todayView = document.getElementById('todayView');
     const memoryView = document.getElementById('memoryView');
+    const inputArea = document.getElementById('inputArea');
 
     // ---------- State ----------
     let isListening = false;
@@ -758,6 +798,7 @@
     let tasks = [];
     let memories = [];
     let config = {
+      userName: 'Tony Stark',
       personality: 'warm',
       voice: 'default',
       theme: 'dark',
@@ -791,15 +832,17 @@
       loadState();
       applyConfigUI();
       updateModelOptions();
+      updateGreeting();
       updateTodayDate();
       renderToday();
       renderMemory();
       initRecognition();
-      addTranscript('jarvis', 'Здравствуйте, сер. Я Джарвис. Нажмите на микрофон или напишите сообщение.');
       switchView('chat');
       // Show orb initially
       orbWrapper.classList.remove('hidden');
       orbHidden = false;
+      // Hide input area initially? No, we keep it but orb is visible.
+      // When user types or taps orb, orb will hide.
     }
 
     // ---------- State ----------
@@ -825,6 +868,7 @@
 
     // ---------- Config UI ----------
     function applyConfigUI() {
+      userNameInput.value = config.userName || 'Tony Stark';
       personalitySelect.value = config.personality || 'warm';
       voiceSelect.value = config.voice || 'default';
       themeSelect.value = config.theme || 'dark';
@@ -842,6 +886,7 @@
         config.model = models[0].value;
       }
       applyTheme(config.theme);
+      updateGreeting();
     }
 
     function updateModelOptions() {
@@ -867,6 +912,22 @@
       document.querySelector('.app').style.background = theme === 'light' ? '#ffffff' : '#0b0e16';
     }
 
+    // ---------- Greeting ----------
+    function updateGreeting() {
+      const name = config.userName || 'Tony Stark';
+      greetingName.textContent = name;
+      const now = new Date();
+      const hour = now.getHours();
+      let timeOfDay = 'Morning';
+      if (hour >= 18) timeOfDay = 'Evening';
+      else if (hour >= 12) timeOfDay = 'Afternoon';
+      greetingTime.textContent = timeOfDay + ',';
+      // Set sub text based on time
+      if (hour < 12) greetingSub.textContent = 'Ask for your morning brief';
+      else if (hour < 18) greetingSub.textContent = 'Ask for your afternoon brief';
+      else greetingSub.textContent = 'Ask for your evening brief';
+    }
+
     // ---------- Navigation ----------
     function switchView(view) {
       chatView.classList.remove('active');
@@ -882,15 +943,19 @@
         chatView.style.display = 'flex';
         chatView.classList.add('active');
         navItems[0].classList.add('active');
-        // Show orb in chat view
-        orbWrapper.classList.remove('hidden');
-        orbHidden = false;
+        // Show orb in chat view if no messages yet
+        if (conversationHistory.length === 0) {
+          orbWrapper.classList.remove('hidden');
+          orbHidden = false;
+        } else {
+          orbWrapper.classList.add('hidden');
+          orbHidden = true;
+        }
       } else if (view === 'today') {
         todayView.style.display = 'flex';
         todayView.classList.add('active');
         navItems[1].classList.add('active');
         renderToday();
-        // Hide orb in today/memory
         orbWrapper.classList.add('hidden');
         orbHidden = true;
       } else if (view === 'memory') {
@@ -1025,12 +1090,11 @@
         conversationHistory = conversationHistory.slice(-50);
       }
       saveState();
-    }
-
-    function clearTranscript() {
-      transcript.innerHTML = '';
-      conversationHistory = [];
-      saveState();
+      // If first message, hide orb
+      if (conversationHistory.length > 0) {
+        orbWrapper.classList.add('hidden');
+        orbHidden = true;
+      }
     }
 
     // ---------- Speech Recognition ----------
@@ -1114,9 +1178,6 @@
       if (text) {
         addTranscript('user', text);
         textInput.value = '';
-        // Hide orb when user sends a message
-        orbWrapper.classList.add('hidden');
-        orbHidden = true;
         processUserInput(text);
       }
     });
@@ -1125,6 +1186,16 @@
       if (e.key === 'Enter') {
         e.preventDefault();
         sendBtn.click();
+      }
+    });
+
+    // Tap on orb to start listening
+    orb.addEventListener('click', function() {
+      if (isProcessing) return;
+      if (isListening) {
+        stopListening();
+      } else {
+        startListening();
       }
     });
 
@@ -1375,6 +1446,7 @@
       settingsModal.classList.remove('active');
     });
     settingsSave.addEventListener('click', () => {
+      config.userName = userNameInput.value.trim() || 'Tony Stark';
       config.personality = personalitySelect.value;
       config.voice = voiceSelect.value;
       config.theme = themeSelect.value;
@@ -1386,6 +1458,7 @@
       saveState();
       applyConfigUI();
       settingsModal.classList.remove('active');
+      updateGreeting();
       orbSub.textContent = 'Settings saved';
       setTimeout(() => {
         orbSub.textContent = 'Jarvis is listening…';
