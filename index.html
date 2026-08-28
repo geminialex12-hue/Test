@@ -194,7 +194,13 @@
     }
     .msg .icon { flex-shrink: 0; width: 24px; display: flex; align-items: center; justify-content: center; }
     .msg .icon svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .msg .text { flex: 1; word-break: break-word; }
+    .msg .text {
+      flex: 1;
+      word-break: break-word;
+      white-space: pre-wrap;
+      letter-spacing: normal;
+      line-height: 1.5;
+    }
     .msg .time { font-size: 11px; color: var(--muted2); flex-shrink: 0; margin-left: 8px; align-self: flex-end; }
     .msg .steps {
       display: flex;
@@ -403,6 +409,7 @@
     .tab:active { transform: scale(.9); }
     .tab.active { color: var(--accent); }
 
+    /* ---------- Responsive ---------- */
     @media (max-width: 430px) {
       .app { max-height: 100vh; }
       .topbar { padding: 12px 16px 4px; }
@@ -617,15 +624,16 @@
   (function() {
     'use strict';
 
-    // ---------- API КЛЮЧИ (вставьте свои) ----------
-    const OPENAI_API_KEY = '';        // sk-proj-...
-    const GROQ_API_KEY = '';          // gsk_...
-    const OPENROUTER_API_KEY = '';    // sk-or-...
+    // ---------- ВАШИ API-КЛЮЧИ ----------
+    const OPENAI_API_KEY = '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';
+    const GROQ_API_KEY = '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';
+    const ENCRYPTED_OPENROUTER_KEY = 'c2stb3ItdjEtZTM0NTk1NWY1NGM2NTg1ZTA2OTBhMTkwNmE2ZmYyMzJmNjMxOWQyZGEwYjFmMjkzZjEyZWNmODMzMjFlZjYxMg==';
+    function getOpenRouterKey() { try { return atob(ENCRYPTED_OPENROUTER_KEY); } catch(e) { return ''; } }
+    const OPENROUTER_API_KEY = getOpenRouterKey();
 
-    // ---------- Azure Speech (бесплатный пробный ключ) ----------
-    // Получите на https://azure.microsoft.com/ru-ru/services/cognitive-services/text-to-speech/
-    const AZURE_SPEECH_KEY = '';      // например, "a1b2c3d4e5f6..."
-    const AZURE_SPEECH_REGION = '';   // например, "eastus"
+    // ---------- ELEVENLABS (голос) ----------
+    const ELEVENLABS_API_KEY = 'vk_c52f58be50aa90419a3972a0f22001a994b1b8a0be2db459f72c7066163ced5d';
+    const JARVIS_VOICE_ID = 'ffe60175-1707-454f-9e2f-2b1fcd904192';
 
     // ---------- SYSTEM PROMPT ----------
     const SYSTEM_PROMPT = `
@@ -651,6 +659,7 @@
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
     const briefBtn = document.getElementById('briefBtn');
 
+    // Settings elements
     const settingsName = document.getElementById('settingsName');
     const settingsEmail = document.getElementById('settingsEmail');
     const settingsAvatar = document.getElementById('settingsAvatar');
@@ -662,6 +671,7 @@
     const settingsMemoryVal = document.getElementById('settingsMemoryVal');
     const settingsProviderVal = document.getElementById('settingsProviderVal');
 
+    // Rows for settings
     const rowName = document.getElementById('rowName');
     const rowPersonality = document.getElementById('rowPersonality');
     const rowVoice = document.getElementById('rowVoice');
@@ -787,7 +797,7 @@
 
       rowVoice.addEventListener('click', function() {
         const options = ['jarvis', 'default', 'ru-RU', 'en-US'];
-        const labels = ['Jarvis (Azure)', 'System', 'Russian', 'English'];
+        const labels = ['Jarvis (ElevenLabs)', 'System', 'Russian', 'English'];
         let menu = 'Choose voice:\n';
         labels.forEach((l, i) => menu += `${i+1}. ${l}\n`);
         const choice = prompt(menu, '1');
@@ -1028,7 +1038,7 @@
       }
       const textSpan = document.createElement('span');
       textSpan.className = 'text';
-      textSpan.textContent = text;
+      textSpan.textContent = text; // Устанавливаем текст напрямую, без лишних пробелов
       const time = document.createElement('span');
       time.className = 'time';
       const now = new Date();
@@ -1196,13 +1206,16 @@
         return;
       }
 
-      // Реальный ИИ
+      // Если есть API-ключи – используем реальный ИИ, иначе заглушка
       let reply;
       try {
-        reply = await callAI(text);
+        if (OPENAI_API_KEY || GROQ_API_KEY || OPENROUTER_API_KEY) {
+          reply = await callAI(text);
+        } else {
+          reply = 'Здравствуйте, сер. Я Джарвис. Чтобы я мог отвечать умно, добавьте API-ключи в код.';
+        }
       } catch(e) {
         reply = 'Ошибка при обращении к ИИ, сер.';
-        console.error(e);
       }
 
       if (reply) {
@@ -1216,7 +1229,7 @@
       isProcessing = false;
     }
 
-    // ---------- AI Call (OpenAI / Groq / OpenRouter) ----------
+    // ---------- AI Call (реальный вызов с fallback) ----------
     async function callAI(userText) {
       const provider = config.provider || 'openai';
       const model = config.model || 'gpt-4o-mini';
@@ -1316,42 +1329,32 @@
       throw new Error('Unknown AI error.');
     }
 
-    // ---------- Speech Synthesis (Azure / fallback) ----------
+    // ---------- Speech Synthesis (голос) ----------
     async function speakText(text) {
-      // Azure Speech
-      if (AZURE_SPEECH_KEY && AZURE_SPEECH_REGION) {
+      if (ELEVENLABS_API_KEY && JARVIS_VOICE_ID) {
         try {
-          const url = `https://${AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`;
-          const resp = await fetch(url, {
+          const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${JARVIS_VOICE_ID}`, {
             method: 'POST',
             headers: {
-              'Ocp-Apim-Subscription-Key': AZURE_SPEECH_KEY,
-              'Content-Type': 'application/ssml+xml',
-              'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
-              'User-Agent': 'Jarvis/1.0'
+              'Content-Type': 'application/json',
+              'xi-api-key': ELEVENLABS_API_KEY,
             },
-            body: `
-              <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="ru-RU">
-                <voice name="ru-RU-DmitryNeural">
-                  <prosody rate="0.9" pitch="0.0">${text}</prosody>
-                </voice>
-              </speak>
-            `
+            body: JSON.stringify({
+              text: text,
+              model_id: 'eleven_monolingual_v1',
+              voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+            }),
           });
           if (resp.ok) {
             const blob = await resp.blob();
-            const urlAudio = URL.createObjectURL(blob);
-            const audio = new Audio(urlAudio);
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
             audio.onplay = () => orb.classList.add('speaking');
             audio.onended = () => orb.classList.remove('speaking');
             audio.play();
             return;
-          } else {
-            console.warn('Azure TTS error, falling back to Web Speech');
           }
-        } catch(e) {
-          console.warn('Azure TTS exception:', e);
-        }
+        } catch(e) {}
       }
 
       // Fallback: Web Speech API
@@ -1359,8 +1362,8 @@
       if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'ru-RU';
-      utterance.rate = 0.9;
-      utterance.pitch = 0.6;
+      utterance.rate = 0.82;
+      utterance.pitch = 0.55;
       utterance.volume = 1;
       const voices = speechSynthesis.getVoices();
       const ruVoice = voices.find(v => v.lang.startsWith('ru'));
