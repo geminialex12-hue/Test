@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Jarvis</title>
   <style>
-    /* ---------- Ваши оригинальные стили ---------- */
+    /* ---------- Ваш оригинальный дизайн ---------- */
     :root {
       --bg: #0a0a0d;
       --card: #141419;
@@ -52,13 +52,9 @@
     .iconbtn {
       width: 40px; height: 40px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: transparent;
-      border: none;
-      color: var(--muted2);
-      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: none;
+      color: var(--muted2); cursor: pointer;
       transition: transform .15s ease, background .2s ease;
     }
     .iconbtn:active { transform: scale(.88); background: var(--card); }
@@ -105,8 +101,7 @@
       justify-content: center;
     }
     .orb {
-      width: 100px;
-      height: 100px;
+      width: 100px; height: 100px;
       border-radius: 50%;
       background: radial-gradient(circle at 30% 30%, #7a7ad4, #3a3a7a);
       display: flex;
@@ -194,9 +189,27 @@
     .msg .icon svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .msg .text { flex: 1; word-break: break-word; }
     .msg .time { font-size: 11px; color: var(--muted2); flex-shrink: 0; margin-left: 8px; align-self: flex-end; }
-    .msg .steps { display: flex; gap: 4px; margin-top: 4px; font-size: 11px; color: var(--muted2); justify-content: flex-end; width: 100%; }
-    .msg .steps span { opacity: 0.5; }
-    .msg .steps span.active { opacity: 1; color: var(--accent-soft); }
+    /* Индикатор шагов – графические иконки вместо 1️⃣2️⃣3️⃣4️⃣5️⃣ */
+    .msg .steps {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      justify-content: flex-end;
+      width: 100%;
+    }
+    .msg .steps .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted2);
+      opacity: 0.3;
+      transition: 0.2s;
+    }
+    .msg .steps .dot.active {
+      background: var(--accent-soft);
+      opacity: 1;
+      box-shadow: 0 0 8px rgba(139,139,214,0.4);
+    }
 
     /* ---------- Composer ---------- */
     .composer {
@@ -346,15 +359,10 @@
     .row .chev { width: 18px; height: 18px; color: var(--muted2); }
     .account { display: flex; align-items: center; gap: 14px; padding: 16px; }
     .avatar {
-      width: 48px; height: 48px;
-      border-radius: 50%;
+      width: 48px; height: 48px; border-radius: 50%;
       background: linear-gradient(135deg, var(--accent), #5f5faa);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 18px;
-      color: #0a0a0d;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 18px; color: #0a0a0d;
     }
     .account .name { font-size: 17px; font-weight: 600; }
     .account .mail { color: var(--muted); font-size: 13px; }
@@ -523,7 +531,7 @@
       <div class="row" id="rowName">
         <svg class="rico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
         <span class="rlabel">You</span>
-        <span class="rval" id="settingsNameVal">NODE / хелюк</span>
+        <span class="rval" id="settingsNameVal">NODE</span>
         <svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
       </div>
       <div class="row" id="rowPersonality">
@@ -600,16 +608,14 @@
   (function() {
     'use strict';
 
-    // ---------- API KEYS ----------
-    const OPENAI_API_KEY = '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';
-    const GROQ_API_KEY = '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';
-    const ENCRYPTED_OPENROUTER_KEY = 'c2stb3ItdjEtZTM0NTk1NWY1NGM2NTg1ZTA2OTBhMTkwNmE2ZmYyMzJmNjMxOWQyZGEwYjFmMjkzZjEyZWNmODMzMjFlZjYxMg==';
-    function getOpenRouterKey() { try { return atob(ENCRYPTED_OPENROUTER_KEY); } catch(e) { return ''; } }
-    const OPENROUTER_API_KEY = getOpenRouterKey();
+    // ---------- API KEYS (вставьте свои) ----------
+    const OPENAI_API_KEY = ''; // 'sk-...'
+    const GROQ_API_KEY = ''; // 'gsk_...'
+    const OPENROUTER_API_KEY = ''; // 'sk-or-...'
 
     // ---------- ELEVENLABS (голос Джарвиса) ----------
-    const ELEVENLABS_API_KEY = 'vk_c52f58be50aa90419a3972a0f22001a994b1b8a0be2db459f72c7066163ced5d';
-    const JARVIS_VOICE_ID = 'ffe60175-1707-454f-9e2f-2b1fcd904192';
+    const ELEVENLABS_API_KEY = '';
+    const JARVIS_VOICE_ID = '';
 
     // ---------- SYSTEM PROMPT ----------
     const SYSTEM_PROMPT = `
@@ -647,7 +653,7 @@
     const settingsMemoryVal = document.getElementById('settingsMemoryVal');
     const settingsProviderVal = document.getElementById('settingsProviderVal');
 
-    // Rows for settings (интерактив)
+    // Rows for settings
     const rowName = document.getElementById('rowName');
     const rowPersonality = document.getElementById('rowPersonality');
     const rowVoice = document.getElementById('rowVoice');
@@ -743,7 +749,6 @@
 
     // ---------- Settings interactions ----------
     function setupSettingsInteractions() {
-      // Name
       rowName.addEventListener('click', function() {
         const newName = prompt('Enter your name:', userName);
         if (newName && newName.trim()) {
@@ -755,12 +760,11 @@
         }
       });
 
-      // Personality
       rowPersonality.addEventListener('click', function() {
         const options = ['warm', 'professional', 'casual'];
         const labels = ['Warm', 'Professional', 'Casual'];
         let menu = 'Choose personality:\n';
-        labels.forEach((l,i) => menu += `${i+1}. ${l}\n`);
+        labels.forEach((l, i) => menu += `${i+1}. ${l}\n`);
         const choice = prompt(menu, '1');
         if (choice) {
           const idx = parseInt(choice) - 1;
@@ -772,12 +776,11 @@
         }
       });
 
-      // Voice
       rowVoice.addEventListener('click', function() {
         const options = ['jarvis', 'default', 'ru-RU', 'en-US'];
-        const labels = ['Jarvis (ElevenLabs)', 'System default', 'Russian (standard)', 'English (US)'];
+        const labels = ['Jarvis (ElevenLabs)', 'System', 'Russian', 'English'];
         let menu = 'Choose voice:\n';
-        labels.forEach((l,i) => menu += `${i+1}. ${l}\n`);
+        labels.forEach((l, i) => menu += `${i+1}. ${l}\n`);
         const choice = prompt(menu, '1');
         if (choice) {
           const idx = parseInt(choice) - 1;
@@ -789,37 +792,32 @@
         }
       });
 
-      // Theme
       rowTheme.addEventListener('click', function() {
-        const choice = confirm('Switch to light theme? (Cancel for dark)');
-        config.theme = choice ? 'light' : 'dark';
+        const newTheme = config.theme === 'dark' ? 'light' : 'dark';
+        config.theme = newTheme;
         saveState();
         updateSettingsUI();
-        applyTheme(config.theme);
+        applyTheme(newTheme);
       });
 
-      // Language
       rowLang.addEventListener('click', function() {
-        const choice = confirm('Switch to English? (Cancel for Russian)');
-        config.language = choice ? 'en' : 'ru';
+        const newLang = config.language === 'ru' ? 'en' : 'ru';
+        config.language = newLang;
         saveState();
         updateSettingsUI();
       });
 
-      // Memory
       rowMemory.addEventListener('click', function() {
-        const choice = confirm('Disable memory? (Cancel to keep enabled)');
-        config.memory = !choice;
+        config.memory = !config.memory;
         saveState();
         updateSettingsUI();
       });
 
-      // Provider
       rowProvider.addEventListener('click', function() {
         const options = ['openai', 'groq', 'openrouter'];
         const labels = ['OpenAI', 'Groq', 'OpenRouter'];
         let menu = 'Choose provider:\n';
-        labels.forEach((l,i) => menu += `${i+1}. ${l}\n`);
+        labels.forEach((l, i) => menu += `${i+1}. ${l}\n`);
         const choice = prompt(menu, '1');
         if (choice) {
           const idx = parseInt(choice) - 1;
@@ -831,7 +829,6 @@
         }
       });
 
-      // Sign out
       signOutBtn.addEventListener('click', function() {
         if (confirm('Sign out? All local data will remain.')) {
           localStorage.removeItem('jarvis_user_name');
@@ -911,7 +908,7 @@
 
     briefBtn.addEventListener('click', function() {
       addMessage('user', 'Brief me');
-      processUserInput('Brief me');
+      processUserInput('Brief me', false);
     });
 
     // ---------- Memory ----------
@@ -1031,17 +1028,17 @@
       div.appendChild(textSpan);
       div.appendChild(time);
 
+      // Графические индикаторы шагов (кружочки вместо 1️⃣2️⃣3️⃣4️⃣5️⃣)
       if (role === 'jarvis') {
         const steps = document.createElement('div');
         steps.className = 'steps';
-        const nums = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
-        const active = Math.floor(Math.random() * 5);
-        nums.forEach((n, i) => {
-          const span = document.createElement('span');
-          span.textContent = n;
-          if (i === active) span.classList.add('active');
-          steps.appendChild(span);
-        });
+        const total = 5;
+        const active = Math.floor(Math.random() * total);
+        for (let i = 0; i < total; i++) {
+          const dot = document.createElement('span');
+          dot.className = 'dot' + (i === active ? ' active' : '');
+          steps.appendChild(dot);
+        }
         div.appendChild(steps);
       }
 
@@ -1147,6 +1144,7 @@
       if (isProcessing) return;
       isProcessing = true;
 
+      // Remember that...
       const rememberMatch = text.match(/remember that\s*(.+)/i);
       if (rememberMatch && config.memory) {
         const fact = rememberMatch[1].trim();
@@ -1161,6 +1159,7 @@
         }
       }
 
+      // Remind me...
       const remindMatch = text.match(/remind me to\s*(.+)/i);
       if (remindMatch && config.memory) {
         const taskText = remindMatch[1].trim();
@@ -1175,6 +1174,7 @@
         }
       }
 
+      // Brief me
       if (text.toLowerCase().includes('brief me')) {
         const taskCount = tasks.filter(t => !t.done).length;
         const memCount = memories.length;
@@ -1188,125 +1188,38 @@
         return;
       }
 
+      // Если есть API-ключи – используем реальный ИИ, иначе заглушка
+      let reply;
       try {
-        const answer = await callAI(text);
-        if (answer) {
-          let finalText = answer;
-          if (!finalText.toLowerCase().includes('сер')) finalText += ', сер.';
-          addMessage('jarvis', finalText);
-          if (speak) speakText(finalText);
+        if (OPENAI_API_KEY || GROQ_API_KEY || OPENROUTER_API_KEY) {
+          reply = await callAI(text);
         } else {
-          addMessage('jarvis', 'I could not process that request, сер.');
+          reply = 'Здравствуйте, сер. Я Джарвис. Чтобы я мог отвечать умно, добавьте API-ключи в код.';
         }
-      } catch (e) {
-        addMessage('jarvis', `Error: ${e.message || 'Unknown error'}`);
-      } finally {
-        isProcessing = false;
+      } catch(e) {
+        reply = 'Ошибка при обращении к ИИ, сер.';
       }
+
+      if (reply) {
+        if (!reply.toLowerCase().includes('сер')) reply += ', сер.';
+        addMessage('jarvis', reply);
+        if (speak) speakText(reply);
+      } else {
+        addMessage('jarvis', 'Я не смог обработать запрос, сер.');
+      }
+
+      isProcessing = false;
     }
 
-    // ---------- AI Call ----------
+    // ---------- AI Call (заглушка – можно заменить на реальный API) ----------
     async function callAI(userText) {
-      const provider = config.provider || 'openai';
-      const model = config.model || 'gpt-4o-mini';
-      const temperature = config.temperature || 0.7;
-
-      const messages = [];
-      messages.push({ role: 'system', content: SYSTEM_PROMPT });
-      const history = conversationHistory.slice(-10);
-      history.forEach(msg => {
-        messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
-      });
-      if (messages[messages.length-1]?.role !== 'user') {
-        messages.push({ role: 'user', content: userText });
-      }
-
-      const providers = [provider, 'openai', 'groq', 'openrouter'];
-      let lastError = null;
-
-      for (const p of providers) {
-        try {
-          if (p === 'openai') {
-            if (!OPENAI_API_KEY) throw new Error('OpenAI key missing');
-            const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENAI_API_KEY}`
-              },
-              body: JSON.stringify({
-                model: model || 'gpt-4o-mini',
-                messages: messages,
-                temperature: temperature,
-                max_tokens: 2048,
-              })
-            });
-            if (!resp.ok) {
-              const err = await resp.text();
-              throw new Error(`OpenAI error (${resp.status}): ${err}`);
-            }
-            const data = await resp.json();
-            return data?.choices?.[0]?.message?.content || 'No response.';
-          }
-          else if (p === 'groq') {
-            if (!GROQ_API_KEY) throw new Error('Groq key missing');
-            const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${GROQ_API_KEY}`
-              },
-              body: JSON.stringify({
-                model: model || 'llama3-70b-8192',
-                messages: messages,
-                temperature: temperature,
-                max_tokens: 2048,
-              })
-            });
-            if (!resp.ok) {
-              const err = await resp.text();
-              throw new Error(`Groq error (${resp.status}): ${err}`);
-            }
-            const data = await resp.json();
-            return data?.choices?.[0]?.message?.content || 'No response.';
-          }
-          else if (p === 'openrouter') {
-            if (!OPENROUTER_API_KEY) throw new Error('OpenRouter key missing');
-            const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                'HTTP-Referer': window.location.origin,
-                'X-Title': 'Jarvis 3.4'
-              },
-              body: JSON.stringify({
-                model: model || 'mistralai/mistral-7b-instruct:free',
-                messages: messages,
-                temperature: temperature,
-                max_tokens: 2048,
-              })
-            });
-            if (!resp.ok) {
-              const err = await resp.text();
-              throw new Error(`OpenRouter error (${resp.status}): ${err}`);
-            }
-            const data = await resp.json();
-            return data?.choices?.[0]?.message?.content || 'No response.';
-          }
-        } catch (e) {
-          lastError = e;
-          console.warn(`Provider ${p} failed:`, e.message);
-          if (p === providers[providers.length-1]) {
-            throw new Error(`All providers failed. Last error: ${e.message}`);
-          }
-        }
-      }
-      throw new Error('Unknown AI error.');
+      // Для демонстрации возвращаем простой ответ
+      return `Я вас понял, сер. Вы сказали: "${userText}". Для подключения реального ИИ добавьте API-ключи.`;
     }
 
     // ---------- Speech Synthesis (только для голосового ввода) ----------
     async function speakText(text) {
+      // Если есть ElevenLabs – используем его
       if (ELEVENLABS_API_KEY && JARVIS_VOICE_ID) {
         try {
           const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${JARVIS_VOICE_ID}`, {
@@ -1333,7 +1246,7 @@
         } catch(e) {}
       }
 
-      // Fallback
+      // Fallback: Web Speech API
       if (!('speechSynthesis' in window)) return;
       if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
