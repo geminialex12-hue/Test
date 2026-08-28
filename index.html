@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Jarvis 3.4</title>
+  <title>Jarvis</title>
   <style>
-    /* ---------- ROOT ---------- */
+    /* ---------- Ваши оригинальные стили ---------- */
     :root {
       --bg: #0a0a0d;
       --card: #141419;
@@ -16,7 +16,6 @@
       --text: #f2f2f5;
       --muted: #8a8a95;
       --muted2: #5c5c66;
-      --danger: #e06a6a;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; }
@@ -40,12 +39,12 @@
       overflow: hidden;
     }
 
-    /* ---------- TOP BAR ---------- */
+    /* ---------- Top bar ---------- */
     .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px 6px;
+      padding: 18px 20px 8px;
       flex-shrink: 0;
       z-index: 5;
     }
@@ -60,18 +59,17 @@
     .iconbtn:active { transform: scale(.88); background: var(--card); }
     .iconbtn svg { stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; width: 22px; height: 22px; }
 
-    /* ---------- SCREENS ---------- */
+    /* ---------- Screens ---------- */
     .screen { display: none; flex-direction: column; flex: 1; padding: 0 20px; overflow-y: auto; animation: fade .3s ease; }
     .screen.active { display: flex; }
     @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-    /* ---------- JARVIS HOME ---------- */
+    /* ---------- Jarvis Home ---------- */
     #screen-jarvis {
       align-items: center;
       padding-top: 4px;
       position: relative;
     }
-    /* Orb wrapper – двигается вверх при появлении чата */
     .orb-wrapper {
       display: flex;
       flex-direction: column;
@@ -127,12 +125,7 @@
       0% { transform: scale(1); opacity: 0.6; }
       100% { transform: scale(1.7); opacity: 0; }
     }
-    .orb .orb-icon {
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+    .orb .orb-icon { z-index: 2; display: flex; align-items: center; justify-content: center; }
     .orb .orb-icon svg { width: 44px; height: 44px; stroke: white; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .orb.active {
       box-shadow: 0 0 0 0 rgba(139,139,214,0.6);
@@ -151,25 +144,13 @@
       0% { box-shadow: 0 0 30px rgba(139,139,214,0.3); transform: scale(1); }
       100% { box-shadow: 0 0 60px rgba(139,139,214,0.6); transform: scale(1.03); }
     }
-    .greeting {
-      text-align: center;
-      margin-top: 2px;
-      transition: opacity 0.4s;
-    }
+    .greeting { text-align: center; margin-top: 2px; transition: opacity 0.4s; }
     .greeting .time { font-size: 16px; font-weight: 400; color: var(--muted); letter-spacing: 0.3px; }
     .greeting .name { font-size: 32px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; margin-top: 1px; }
     .greeting .sub { font-size: 15px; color: var(--muted); margin-top: 4px; }
 
-    /* ---------- CHAT (transcript) ---------- */
-    .chat-area {
-      flex: 1;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-height: 0;
-      margin-top: 4px;
-    }
+    /* ---------- Chat area ---------- */
+    .chat-area { flex: 1; width: 100%; display: flex; flex-direction: column; overflow: hidden; min-height: 0; margin-top: 4px; }
     .transcript {
       flex: 1;
       overflow-y: auto;
@@ -207,20 +188,11 @@
     .msg .icon svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .msg .text { flex: 1; word-break: break-word; }
     .msg .time { font-size: 11px; color: var(--muted2); flex-shrink: 0; margin-left: 8px; align-self: flex-end; }
-    /* Индикатор "1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣" под сообщением */
-    .msg .steps {
-      display: flex;
-      gap: 4px;
-      margin-top: 4px;
-      font-size: 11px;
-      color: var(--muted2);
-      justify-content: flex-end;
-      width: 100%;
-    }
+    .msg .steps { display: flex; gap: 4px; margin-top: 4px; font-size: 11px; color: var(--muted2); justify-content: flex-end; width: 100%; }
     .msg .steps span { opacity: 0.5; }
     .msg .steps span.active { opacity: 1; color: var(--accent-soft); }
 
-    /* ---------- COMPOSER ---------- */
+    /* ---------- Composer ---------- */
     .composer {
       width: 100%;
       display: flex;
@@ -260,28 +232,18 @@
     .composer .btn:hover { background: var(--card2); }
     .composer .btn:active { transform: scale(0.9); }
     .composer .btn svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .composer .mic-btn {
-      color: var(--accent-soft);
-    }
-    .composer .mic-btn.listening {
-      color: var(--danger);
-      background: rgba(224,106,106,0.12);
-      animation: micPulse 1.2s infinite;
-    }
+    .composer .mic-btn { color: var(--accent-soft); }
+    .composer .mic-btn.listening { color: #e06a6a; background: rgba(224,106,106,0.12); animation: micPulse 1.2s infinite; }
     @keyframes micPulse {
       0% { box-shadow: 0 0 0 0 rgba(224,106,106,0.3); }
       70% { box-shadow: 0 0 0 14px rgba(224,106,106,0); }
       100% { box-shadow: 0 0 0 0 rgba(224,106,106,0); }
     }
-    .composer .send-btn {
-      background: var(--accent);
-      color: #0a0a0d;
-      box-shadow: 0 4px 16px rgba(139,139,214,0.25);
-    }
+    .composer .send-btn { background: var(--accent); color: #0a0a0d; box-shadow: 0 4px 16px rgba(139,139,214,0.25); }
     .composer .send-btn:hover { background: var(--accent-soft); }
     .composer .send-btn svg { stroke: #0a0a0d; stroke-width: 2; }
 
-    /* ---------- TODAY / MEMORY / HISTORY ---------- */
+    /* ---------- Today / Memory / History ---------- */
     .page-title { font-size: 32px; font-weight: 700; margin: 18px 0 2px; }
     .page-sub { color: var(--muted); font-size: 15px; margin-bottom: 16px; }
     .pill {
@@ -311,7 +273,6 @@
     .search input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 15px; }
     .search input::placeholder { color: var(--muted2); }
 
-    /* Today items */
     .today-item {
       display: flex;
       align-items: center;
@@ -338,9 +299,8 @@
     .today-item .task-text { flex: 1; font-size: 15px; }
     .today-item .task-text.done { text-decoration: line-through; color: var(--muted2); }
     .today-item .task-del { background: none; border: none; color: var(--muted2); cursor: pointer; font-size: 18px; padding: 4px; }
-    .today-item .task-del:hover { color: var(--danger); }
+    .today-item .task-del:hover { color: #e06a6a; }
 
-    /* Memory items */
     .memory-item {
       display: flex;
       align-items: center;
@@ -353,14 +313,13 @@
     }
     .memory-item .mem-text { flex: 1; font-size: 15px; }
     .memory-item .mem-del { background: none; border: none; color: var(--muted2); cursor: pointer; font-size: 18px; padding: 4px; }
-    .memory-item .mem-del:hover { color: var(--danger); }
+    .memory-item .mem-del:hover { color: #e06a6a; }
 
-    /* History */
     .conv { padding: 12px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
     .conv .t { font-size: 16px; font-weight: 600; }
     .conv .m { color: var(--muted2); font-size: 13px; margin-top: 3px; }
 
-    /* ---------- SETTINGS ---------- */
+    /* ---------- Settings ---------- */
     .subhead { display: flex; align-items: center; gap: 14px; margin: 14px 0 16px; }
     .group-label { color: var(--muted2); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; margin: 20px 4px 8px; }
     .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
@@ -388,9 +347,9 @@
     }
     .account .name { font-size: 17px; font-weight: 600; }
     .account .mail { color: var(--muted); font-size: 13px; }
-    .danger { color: var(--danger); }
+    .danger { color: #e06a6a; }
 
-    /* ---------- BOTTOM NAV ---------- */
+    /* ---------- Bottom nav ---------- */
     .nav {
       display: flex;
       justify-content: space-around;
@@ -419,7 +378,7 @@
     .tab:active { transform: scale(.9); }
     .tab.active { color: var(--accent); }
 
-    /* ---------- RESPONSIVE ---------- */
+    /* ---------- Responsive ---------- */
     @media (max-width: 430px) {
       .app { max-height: 100vh; }
       .topbar { padding: 12px 16px 4px; }
@@ -439,13 +398,9 @@
       .orb .orb-icon svg { width: 30px; height: 30px; }
       .greeting .name { font-size: 24px; }
     }
-
-    /* ---------- SCROLLBAR ---------- */
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
-
-    /* ---------- HIDDEN ---------- */
     .hidden { display: none !important; }
   </style>
 </head>
@@ -465,7 +420,6 @@
 
   <!-- ===== JARVIS HOME ===== -->
   <section class="screen active" id="screen-jarvis">
-    <!-- Orb + Greeting (двигается вверх при сообщениях) -->
     <div class="orb-wrapper" id="orbWrapper">
       <div class="orb-container">
         <div class="orb" id="orb">
@@ -484,12 +438,10 @@
       </div>
     </div>
 
-    <!-- Chat Area -->
     <div class="chat-area">
       <div class="transcript" id="transcript"></div>
     </div>
 
-    <!-- Composer -->
     <div class="composer">
       <input type="text" id="textInput" placeholder="Message Jarvis…" autocomplete="off" />
       <button class="btn mic-btn" id="micBtn" aria-label="Voice input">
@@ -557,19 +509,19 @@
     </div>
     <div class="group-label">Your Jarvis</div>
     <div class="card">
-      <div class="row" onclick="document.getElementById('userNameInput').focus()">
+      <div class="row" id="rowName">
         <svg class="rico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
         <span class="rlabel">You</span>
         <span class="rval" id="settingsNameVal">NODE / хелюк</span>
         <svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
       </div>
-      <div class="row">
+      <div class="row" id="rowPersonality">
         <svg class="rico" viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 1 5 5c0 3-2 4-2 7H9c0-3-2-4-2-7a5 5 0 0 1 5-5z"/><path d="M9 21h6"/></svg>
         <span class="rlabel">Personality</span>
         <span class="rval" id="settingsPersonalityVal">Warm</span>
         <svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
       </div>
-      <div class="row">
+      <div class="row" id="rowVoice">
         <svg class="rico" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/></svg>
         <span class="rlabel">Voice</span>
         <span class="rval" id="settingsVoiceVal">Jarvis</span>
@@ -578,19 +530,19 @@
     </div>
     <div class="group-label">App</div>
     <div class="card">
-      <div class="row">
+      <div class="row" id="rowTheme">
         <svg class="rico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/></svg>
         <span class="rlabel">Appearance</span>
         <span class="rval" id="settingsThemeVal">Dark</span>
         <svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
       </div>
-      <div class="row">
+      <div class="row" id="rowLang">
         <svg class="rico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
         <span class="rlabel">Language</span>
         <span class="rval" id="settingsLangVal">Русский</span>
         <svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
       </div>
-      <div class="row">
+      <div class="row" id="rowMemory">
         <svg class="rico" viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 1 5 5c0 3-2 4-2 7H9c0-3-2-4-2-7a5 5 0 0 1 5-5z"/></svg>
         <span class="rlabel">Memory</span>
         <span class="rval" id="settingsMemoryVal">On</span>
@@ -599,7 +551,7 @@
     </div>
     <div class="group-label">Advanced</div>
     <div class="card">
-      <div class="row">
+      <div class="row" id="rowProvider">
         <svg class="rico" viewBox="0 0 24 24"><circle cx="8" cy="12" r="4"/><path d="M12 12h9l-2 2 2 2"/></svg>
         <span class="rlabel">Provider</span>
         <span class="rval" id="settingsProviderVal">OpenAI</span>
@@ -671,6 +623,8 @@
     const historyEmpty = document.getElementById('historyEmpty');
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
     const briefBtn = document.getElementById('briefBtn');
+
+    // Settings elements
     const settingsName = document.getElementById('settingsName');
     const settingsEmail = document.getElementById('settingsEmail');
     const settingsAvatar = document.getElementById('settingsAvatar');
@@ -682,6 +636,16 @@
     const settingsMemoryVal = document.getElementById('settingsMemoryVal');
     const settingsProviderVal = document.getElementById('settingsProviderVal');
 
+    // Rows for settings (интерактив)
+    const rowName = document.getElementById('rowName');
+    const rowPersonality = document.getElementById('rowPersonality');
+    const rowVoice = document.getElementById('rowVoice');
+    const rowTheme = document.getElementById('rowTheme');
+    const rowLang = document.getElementById('rowLang');
+    const rowMemory = document.getElementById('rowMemory');
+    const rowProvider = document.getElementById('rowProvider');
+    const signOutBtn = document.getElementById('signOutBtn');
+
     // ---------- State ----------
     let isListening = false;
     let isProcessing = false;
@@ -689,8 +653,6 @@
     let conversationHistory = [];
     let tasks = [];
     let memories = [];
-    let userName = 'NODE / хелюк';
-    let userEmail = 'node@jarvis.ai';
     let config = {
       userName: 'NODE / хелюк',
       personality: 'warm',
@@ -702,7 +664,8 @@
       provider: 'openai',
       model: 'gpt-4o-mini'
     };
-    let messageCount = 0;
+    let userName = 'NODE / хелюк';
+    let userEmail = 'node@jarvis.ai';
     let orbHidden = false;
 
     // ---------- Init ----------
@@ -717,6 +680,7 @@
       initRecognition();
       addMessage('jarvis', 'Здравствуйте, сер. Я Джарвис. Нажмите на микрофон или напишите сообщение.');
       updateSettingsUI();
+      setupSettingsInteractions();
     }
 
     // ---------- State ----------
@@ -764,6 +728,113 @@
       settingsMemoryVal.textContent = config.memory ? 'On' : 'Off';
       settingsProviderVal.textContent = config.provider || 'openai';
       settingsEmail.textContent = userEmail || 'user@example.com';
+    }
+
+    // ---------- Settings interactions ----------
+    function setupSettingsInteractions() {
+      // Name
+      rowName.addEventListener('click', function() {
+        const newName = prompt('Enter your name:', userName);
+        if (newName && newName.trim()) {
+          userName = newName.trim();
+          config.userName = userName;
+          saveState();
+          updateGreeting();
+          updateSettingsUI();
+        }
+      });
+
+      // Personality
+      rowPersonality.addEventListener('click', function() {
+        const options = ['warm', 'professional', 'casual'];
+        const labels = ['Warm', 'Professional', 'Casual'];
+        const choice = prompt('Choose personality:\n1. Warm\n2. Professional\n3. Casual', '1');
+        if (choice) {
+          const idx = parseInt(choice) - 1;
+          if (idx >= 0 && idx < options.length) {
+            config.personality = options[idx];
+            saveState();
+            updateSettingsUI();
+          }
+        }
+      });
+
+      // Voice
+      rowVoice.addEventListener('click', function() {
+        const options = ['jarvis', 'default', 'ru-RU', 'en-US'];
+        const labels = ['Jarvis (ElevenLabs)', 'System default', 'Russian (standard)', 'English (US)'];
+        let menu = 'Choose voice:\n';
+        labels.forEach((l, i) => menu += `${i+1}. ${l}\n`);
+        const choice = prompt(menu, '1');
+        if (choice) {
+          const idx = parseInt(choice) - 1;
+          if (idx >= 0 && idx < options.length) {
+            config.voice = options[idx];
+            saveState();
+            updateSettingsUI();
+          }
+        }
+      });
+
+      // Theme
+      rowTheme.addEventListener('click', function() {
+        const choice = confirm('Switch to light theme? (Cancel for dark)');
+        config.theme = choice ? 'light' : 'dark';
+        saveState();
+        updateSettingsUI();
+        applyTheme(config.theme);
+      });
+
+      // Language
+      rowLang.addEventListener('click', function() {
+        const choice = confirm('Switch to English? (Cancel for Russian)');
+        config.language = choice ? 'en' : 'ru';
+        saveState();
+        updateSettingsUI();
+      });
+
+      // Memory
+      rowMemory.addEventListener('click', function() {
+        const choice = confirm('Disable memory? (Cancel to keep enabled)');
+        config.memory = !choice;
+        saveState();
+        updateSettingsUI();
+      });
+
+      // Provider
+      rowProvider.addEventListener('click', function() {
+        const options = ['openai', 'groq', 'openrouter'];
+        const labels = ['OpenAI', 'Groq', 'OpenRouter'];
+        let menu = 'Choose provider:\n';
+        labels.forEach((l, i) => menu += `${i+1}. ${l}\n`);
+        const choice = prompt(menu, '1');
+        if (choice) {
+          const idx = parseInt(choice) - 1;
+          if (idx >= 0 && idx < options.length) {
+            config.provider = options[idx];
+            saveState();
+            updateSettingsUI();
+          }
+        }
+      });
+
+      // Sign out
+      signOutBtn.addEventListener('click', function() {
+        if (confirm('Sign out? All local data will remain.')) {
+          localStorage.removeItem('jarvis_user_name');
+          localStorage.removeItem('jarvis_user_email');
+          userName = 'NODE / хелюк';
+          userEmail = 'node@jarvis.ai';
+          saveState();
+          updateSettingsUI();
+          updateGreeting();
+        }
+      });
+    }
+
+    function applyTheme(theme) {
+      document.body.style.background = theme === 'light' ? '#f0f2f5' : '#0a0a0d';
+      document.querySelector('.app').style.background = theme === 'light' ? '#ffffff' : 'radial-gradient(120% 80% at 50% 0%, #101018 0%, #0a0a0d 55%)';
     }
 
     // ---------- Greeting ----------
@@ -947,12 +1018,10 @@
       div.appendChild(textSpan);
       div.appendChild(time);
 
-      // Добавляем индикатор шагов (1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣)
       if (role === 'jarvis') {
         const steps = document.createElement('div');
         steps.className = 'steps';
         const nums = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
-        // Активный шаг — случайный или по порядку
         const active = Math.floor(Math.random() * 5);
         nums.forEach((n, i) => {
           const span = document.createElement('span');
@@ -970,7 +1039,6 @@
       saveState();
       renderHistory();
 
-      // Прячем орб после первого сообщения
       if (conversationHistory.length > 1 && !orbHidden) {
         orbWrapper.classList.add('shrink');
         orbHidden = true;
@@ -982,10 +1050,7 @@
 
     // ---------- Speech Recognition ----------
     function initRecognition() {
-      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        console.warn('Speech recognition not supported');
-        return false;
-      }
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return false;
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SR();
       recognition.lang = 'ru-RU';
@@ -1003,7 +1068,7 @@
         if (text) {
           addMessage('user', text);
           stopListening();
-          processUserInput(text, true); // голосовой ввод -> озвучивать
+          processUserInput(text, true);
         } else {
           stopListening();
         }
@@ -1053,7 +1118,7 @@
       if (text) {
         addMessage('user', text);
         textInput.value = '';
-        processUserInput(text, false); // текстовый ввод -> НЕ озвучивать
+        processUserInput(text, false);
       }
     });
 
@@ -1069,7 +1134,6 @@
       if (isProcessing) return;
       isProcessing = true;
 
-      // Remember that...
       const rememberMatch = text.match(/remember that\s*(.+)/i);
       if (rememberMatch && config.memory) {
         const fact = rememberMatch[1].trim();
@@ -1084,7 +1148,6 @@
         }
       }
 
-      // Remind me...
       const remindMatch = text.match(/remind me to\s*(.+)/i);
       if (remindMatch && config.memory) {
         const taskText = remindMatch[1].trim();
@@ -1099,7 +1162,6 @@
         }
       }
 
-      // Brief me
       if (text.toLowerCase().includes('brief me')) {
         const taskCount = tasks.filter(t => !t.done).length;
         const memCount = memories.length;
@@ -1119,7 +1181,6 @@
           let finalText = answer;
           if (!finalText.toLowerCase().includes('сер')) finalText += ', сер.';
           addMessage('jarvis', finalText);
-          // Озвучиваем ТОЛЬКО если это голосовой ввод (speak === true)
           if (speak) speakText(finalText);
         } else {
           addMessage('jarvis', 'I could not process that request, сер.');
