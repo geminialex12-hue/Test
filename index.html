@@ -71,6 +71,13 @@
       padding-top: 4px;
       position: relative;
     }
+    #sphereCanvas {
+      width: 260px;
+      height: 260px;
+      display: block;
+      flex-shrink: 0;
+      margin-bottom: 4px;
+    }
     .orb-wrapper {
       display: flex;
       flex-direction: column;
@@ -189,7 +196,6 @@
     .msg .icon svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .msg .text { flex: 1; word-break: break-word; }
     .msg .time { font-size: 11px; color: var(--muted2); flex-shrink: 0; margin-left: 8px; align-self: flex-end; }
-    /* Индикатор шагов – графические иконки вместо 1️⃣2️⃣3️⃣4️⃣5️⃣ */
     .msg .steps {
       display: flex;
       gap: 6px;
@@ -397,10 +403,10 @@
     .tab:active { transform: scale(.9); }
     .tab.active { color: var(--accent); }
 
-    /* ---------- Responsive ---------- */
     @media (max-width: 430px) {
       .app { max-height: 100vh; }
       .topbar { padding: 12px 16px 4px; }
+      #sphereCanvas { width: 220px; height: 220px; }
       .orb-container { width: 100px; height: 100px; }
       .orb { width: 84px; height: 84px; }
       .orb .orb-icon svg { width: 36px; height: 36px; }
@@ -412,6 +418,7 @@
       .page-title { font-size: 28px; }
     }
     @media (max-width: 380px) {
+      #sphereCanvas { width: 180px; height: 180px; }
       .orb-container { width: 84px; height: 84px; }
       .orb { width: 72px; height: 72px; }
       .orb .orb-icon svg { width: 30px; height: 30px; }
@@ -439,6 +446,8 @@
 
   <!-- ===== JARVIS HOME ===== -->
   <section class="screen active" id="screen-jarvis">
+    <canvas id="sphereCanvas" width="520" height="520"></canvas>
+
     <div class="orb-wrapper" id="orbWrapper">
       <div class="orb-container">
         <div class="orb" id="orb">
@@ -608,14 +617,15 @@
   (function() {
     'use strict';
 
-    // ---------- API KEYS (вставьте свои) ----------
-    const OPENAI_API_KEY = ''; // 'sk-...'
-    const GROQ_API_KEY = ''; // 'gsk_...'
-    const OPENROUTER_API_KEY = ''; // 'sk-or-...'
+    // ---------- API КЛЮЧИ (вставьте свои) ----------
+    const OPENAI_API_KEY = '';        // sk-proj-...
+    const GROQ_API_KEY = '';          // gsk_...
+    const OPENROUTER_API_KEY = '';    // sk-or-...
 
-    // ---------- ELEVENLABS (голос Джарвиса) ----------
-    const ELEVENLABS_API_KEY = '';
-    const JARVIS_VOICE_ID = '';
+    // ---------- Azure Speech (бесплатный пробный ключ) ----------
+    // Получите на https://azure.microsoft.com/ru-ru/services/cognitive-services/text-to-speech/
+    const AZURE_SPEECH_KEY = '';      // например, "a1b2c3d4e5f6..."
+    const AZURE_SPEECH_REGION = '';   // например, "eastus"
 
     // ---------- SYSTEM PROMPT ----------
     const SYSTEM_PROMPT = `
@@ -641,7 +651,6 @@
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
     const briefBtn = document.getElementById('briefBtn');
 
-    // Settings elements
     const settingsName = document.getElementById('settingsName');
     const settingsEmail = document.getElementById('settingsEmail');
     const settingsAvatar = document.getElementById('settingsAvatar');
@@ -653,7 +662,6 @@
     const settingsMemoryVal = document.getElementById('settingsMemoryVal');
     const settingsProviderVal = document.getElementById('settingsProviderVal');
 
-    // Rows for settings
     const rowName = document.getElementById('rowName');
     const rowPersonality = document.getElementById('rowPersonality');
     const rowVoice = document.getElementById('rowVoice');
@@ -695,6 +703,7 @@
       renderMemory();
       renderHistory();
       initRecognition();
+      initParticles();
       addMessage('jarvis', 'Здравствуйте, сер. Я Джарвис. Нажмите на микрофон или напишите сообщение.');
       updateSettingsUI();
       setupSettingsInteractions();
@@ -778,7 +787,7 @@
 
       rowVoice.addEventListener('click', function() {
         const options = ['jarvis', 'default', 'ru-RU', 'en-US'];
-        const labels = ['Jarvis (ElevenLabs)', 'System', 'Russian', 'English'];
+        const labels = ['Jarvis (Azure)', 'System', 'Russian', 'English'];
         let menu = 'Choose voice:\n';
         labels.forEach((l, i) => menu += `${i+1}. ${l}\n`);
         const choice = prompt(menu, '1');
@@ -1028,7 +1037,6 @@
       div.appendChild(textSpan);
       div.appendChild(time);
 
-      // Графические индикаторы шагов (кружочки вместо 1️⃣2️⃣3️⃣4️⃣5️⃣)
       if (role === 'jarvis') {
         const steps = document.createElement('div');
         steps.className = 'steps';
@@ -1188,16 +1196,13 @@
         return;
       }
 
-      // Если есть API-ключи – используем реальный ИИ, иначе заглушка
+      // Реальный ИИ
       let reply;
       try {
-        if (OPENAI_API_KEY || GROQ_API_KEY || OPENROUTER_API_KEY) {
-          reply = await callAI(text);
-        } else {
-          reply = 'Здравствуйте, сер. Я Джарвис. Чтобы я мог отвечать умно, добавьте API-ключи в код.';
-        }
+        reply = await callAI(text);
       } catch(e) {
         reply = 'Ошибка при обращении к ИИ, сер.';
+        console.error(e);
       }
 
       if (reply) {
@@ -1211,39 +1216,142 @@
       isProcessing = false;
     }
 
-    // ---------- AI Call (заглушка – можно заменить на реальный API) ----------
+    // ---------- AI Call (OpenAI / Groq / OpenRouter) ----------
     async function callAI(userText) {
-      // Для демонстрации возвращаем простой ответ
-      return `Я вас понял, сер. Вы сказали: "${userText}". Для подключения реального ИИ добавьте API-ключи.`;
+      const provider = config.provider || 'openai';
+      const model = config.model || 'gpt-4o-mini';
+      const temperature = config.temperature || 0.7;
+
+      const messages = [];
+      messages.push({ role: 'system', content: SYSTEM_PROMPT });
+      const history = conversationHistory.slice(-10);
+      history.forEach(msg => {
+        messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
+      });
+      if (messages[messages.length-1]?.role !== 'user') {
+        messages.push({ role: 'user', content: userText });
+      }
+
+      const providers = [provider, 'openai', 'groq', 'openrouter'];
+      let lastError = null;
+
+      for (const p of providers) {
+        try {
+          if (p === 'openai') {
+            if (!OPENAI_API_KEY) throw new Error('OpenAI key missing');
+            const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${OPENAI_API_KEY}`
+              },
+              body: JSON.stringify({
+                model: model || 'gpt-4o-mini',
+                messages: messages,
+                temperature: temperature,
+                max_tokens: 2048,
+              })
+            });
+            if (!resp.ok) {
+              const err = await resp.text();
+              throw new Error(`OpenAI error (${resp.status}): ${err}`);
+            }
+            const data = await resp.json();
+            return data?.choices?.[0]?.message?.content || 'No response.';
+          }
+          else if (p === 'groq') {
+            if (!GROQ_API_KEY) throw new Error('Groq key missing');
+            const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GROQ_API_KEY}`
+              },
+              body: JSON.stringify({
+                model: model || 'llama3-70b-8192',
+                messages: messages,
+                temperature: temperature,
+                max_tokens: 2048,
+              })
+            });
+            if (!resp.ok) {
+              const err = await resp.text();
+              throw new Error(`Groq error (${resp.status}): ${err}`);
+            }
+            const data = await resp.json();
+            return data?.choices?.[0]?.message?.content || 'No response.';
+          }
+          else if (p === 'openrouter') {
+            if (!OPENROUTER_API_KEY) throw new Error('OpenRouter key missing');
+            const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'HTTP-Referer': window.location.origin,
+                'X-Title': 'Jarvis 3.4'
+              },
+              body: JSON.stringify({
+                model: model || 'mistralai/mistral-7b-instruct:free',
+                messages: messages,
+                temperature: temperature,
+                max_tokens: 2048,
+              })
+            });
+            if (!resp.ok) {
+              const err = await resp.text();
+              throw new Error(`OpenRouter error (${resp.status}): ${err}`);
+            }
+            const data = await resp.json();
+            return data?.choices?.[0]?.message?.content || 'No response.';
+          }
+        } catch (e) {
+          lastError = e;
+          console.warn(`Provider ${p} failed:`, e.message);
+          if (p === providers[providers.length-1]) {
+            throw new Error(`All providers failed. Last error: ${e.message}`);
+          }
+        }
+      }
+      throw new Error('Unknown AI error.');
     }
 
-    // ---------- Speech Synthesis (только для голосового ввода) ----------
+    // ---------- Speech Synthesis (Azure / fallback) ----------
     async function speakText(text) {
-      // Если есть ElevenLabs – используем его
-      if (ELEVENLABS_API_KEY && JARVIS_VOICE_ID) {
+      // Azure Speech
+      if (AZURE_SPEECH_KEY && AZURE_SPEECH_REGION) {
         try {
-          const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${JARVIS_VOICE_ID}`, {
+          const url = `https://${AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`;
+          const resp = await fetch(url, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'xi-api-key': ELEVENLABS_API_KEY,
+              'Ocp-Apim-Subscription-Key': AZURE_SPEECH_KEY,
+              'Content-Type': 'application/ssml+xml',
+              'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+              'User-Agent': 'Jarvis/1.0'
             },
-            body: JSON.stringify({
-              text: text,
-              model_id: 'eleven_monolingual_v1',
-              voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-            }),
+            body: `
+              <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="ru-RU">
+                <voice name="ru-RU-DmitryNeural">
+                  <prosody rate="0.9" pitch="0.0">${text}</prosody>
+                </voice>
+              </speak>
+            `
           });
           if (resp.ok) {
             const blob = await resp.blob();
-            const url = URL.createObjectURL(blob);
-            const audio = new Audio(url);
+            const urlAudio = URL.createObjectURL(blob);
+            const audio = new Audio(urlAudio);
             audio.onplay = () => orb.classList.add('speaking');
             audio.onended = () => orb.classList.remove('speaking');
             audio.play();
             return;
+          } else {
+            console.warn('Azure TTS error, falling back to Web Speech');
           }
-        } catch(e) {}
+        } catch(e) {
+          console.warn('Azure TTS exception:', e);
+        }
       }
 
       // Fallback: Web Speech API
@@ -1251,8 +1359,8 @@
       if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'ru-RU';
-      utterance.rate = 0.82;
-      utterance.pitch = 0.55;
+      utterance.rate = 0.9;
+      utterance.pitch = 0.6;
       utterance.volume = 1;
       const voices = speechSynthesis.getVoices();
       const ruVoice = voices.find(v => v.lang.startsWith('ru'));
@@ -1261,6 +1369,54 @@
       utterance.onend = () => orb.classList.remove('speaking');
       utterance.onerror = () => orb.classList.remove('speaking');
       window.speechSynthesis.speak(utterance);
+    }
+
+    // ---------- Анимация частиц ----------
+    function initParticles() {
+      const canvas = document.getElementById('sphereCanvas');
+      const ctx = canvas.getContext('2d');
+      const DPR = Math.min(window.devicePixelRatio || 1, 2);
+      const size = 260;
+      canvas.width = size * DPR;
+      canvas.height = size * DPR;
+      canvas.style.width = size + 'px';
+      canvas.style.height = size + 'px';
+      ctx.scale(DPR, DPR);
+
+      const cx = size/2, cy = size/2, R = size * 0.42;
+      const N = 700;
+      const pts = [];
+      for (let i = 0; i < N; i++) {
+        const y = 1 - (i / (N - 1)) * 2;
+        const r = Math.sqrt(1 - y * y);
+        const phi = i * Math.PI * (3 - Math.sqrt(5));
+        pts.push({ x: Math.cos(phi) * r, y: y, z: Math.sin(phi) * r });
+      }
+
+      let angle = 0;
+      function frame() {
+        ctx.clearRect(0, 0, size, size);
+        angle += 0.0045;
+        const sin = Math.sin(angle), cos = Math.cos(angle);
+        const tilt = 0.42, st = Math.sin(tilt), ct = Math.cos(tilt);
+        for (const p of pts) {
+          let x = p.x * cos - p.z * sin;
+          let z = p.x * sin + p.z * cos;
+          let y = p.y;
+          let y2 = y * ct - z * st;
+          let z2 = y * st + z * ct;
+          const depth = (z2 + 1) / 2;
+          const px = cx + x * R;
+          const py = cy + y2 * R;
+          const rad = 0.5 + depth * 1.6;
+          ctx.beginPath();
+          ctx.arc(px, py, rad, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(230,230,245,' + (0.15 + depth * 0.75) + ')';
+          ctx.fill();
+        }
+        requestAnimationFrame(frame);
+      }
+      frame();
     }
 
     // ---------- Init ----------
